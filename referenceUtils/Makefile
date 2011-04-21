@@ -1,5 +1,5 @@
-rootPath = ../../
-include ../../include.mk
+rootPath = ../
+include ../include.mk
 
 progs = $(notdir $(wildcard))
 

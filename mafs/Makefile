@@ -1,5 +1,5 @@
-rootPath = ../../
-include ../../include.mk
+rootPath = ../
+include ../include.mk
 refDir = ../referenceUtils
 
 progs = $(notdir $(wildcard cactus_mafToReferenceSeq.py))

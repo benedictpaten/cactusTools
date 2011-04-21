@@ -1,5 +1,5 @@
-rootPath = ../../
-include ../../include.mk
+rootPath = ../
+include ../include.mk
 
 #progs = $(notdir $(wildcard cactus_tuning.py cactus_tuning_parameters.py cactus_tuning_summary2.py))
 progs = $(notdir $(wildcard cactus_tuning.py))
@@ -11,7 +11,7 @@ all: ${targets}
 ${binPath}/%: %
 	@mkdir -p $(dir $@)
 	cp -f $< $@
-	chmod 775 $@
+	chmod 775 $@ 
 
 clean :
 	rm -f ${progs:%=${binPath}/%}

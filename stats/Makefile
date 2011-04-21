@@ -1,5 +1,5 @@
-rootPath = ../../
-include ../../include.mk
+rootPath = ../
+include ../include.mk
 
 all : ${libPath}/cactusTreeStats.a  ${binPath}/cactus_treeStats ${binPath}/cactus_treeStatsToLatexTables.py
 

@@ -1,5 +1,5 @@
-rootPath = ../../
-include ../../include.mk
+rootPath = ../
+include ../include.mk
 
 all :  ${binPath}/cactus_referenceViewer
 

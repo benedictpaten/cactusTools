@@ -1,11 +1,10 @@
-rootPath = ../
-include ../include.mk
+rootPath = ./
+include ./include.mk
 
 # order is important, libraries first
 modules = genemap graphVizPlots mafs stats referenceViewer psls tuning beds referenceUtils 
-#beds  
 .PHONY: all %.all clean %.clean
-#coreModule make file
+
 all : ${libPath}/cactusUtils.a ${modules:%=all.%}
 
 ${libPath}/cactusUtils.a : cactusUtils.h cactusUtils.c ${basicLibsDependencies}
@@ -25,4 +24,5 @@ clean.%:
 	cd $* && make clean
 
 clean.cactusUtils:
-	rm -f ${libPath}/cactusUtils.a
+	rm -f ${libPath}/cactusUtils.a 
+ 

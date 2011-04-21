@@ -1,0 +1,3 @@
+Tools for the Cactus genome alignment program. 
+
+Edit the include.mk file to point to the location of cactus and type 'make all'
