@@ -5,10 +5,10 @@
 #Released under the MIT license, see LICENSE.txt
 import unittest
 
-from cactus.utilities.graphVizPlots.cactus_graphVizTest import TestCase as graphVizTest
-from cactus.utilities.mafs.cactus_MAFGeneratorTest import TestCase as mAFTest
-from cactus.utilities.stats.cactus_treeStatsTest import TestCase as statsTest
-from cactus.utilities.referenceViewer.cactus_referenceViewerTest import TestCase as referenceViewerTest
+from cactusTools.graphVizPlots.cactus_graphVizTest import TestCase as graphVizTest
+from cactusTools.mafs.cactus_MAFGeneratorTest import TestCase as mAFTest
+from cactusTools.stats.cactus_treeStatsTest import TestCase as statsTest
+from cactusTools.referenceViewer.cactus_referenceViewerTest import TestCase as referenceViewerTest
 
 from sonLib.bioio import parseSuiteTestOptions
 

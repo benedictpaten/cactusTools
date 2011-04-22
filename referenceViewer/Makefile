@@ -7,5 +7,5 @@ ${binPath}/cactus_referenceViewer : *.c *.h ${libPath}/cactusLib.a ${basicLibsDe
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_referenceViewer main.c referenceViewer.c graphViz.c ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/cactus_referenceViewer
+	rm -rf *.o
+	rm -rf ${binPath}/cactus_referenceViewer

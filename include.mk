@@ -1,7 +1,7 @@
 cactusLibRootPath=${rootPath}../cactus
 include  ${cactusLibRootPath}/include.mk
 #Location of bin and lib dirs
-binPath=${cactusLibRootPath}/bin
+binPath=${rootPath}/bin
 libPath=${cactusLibRootPath}/lib
 
 # optional kent library stuff

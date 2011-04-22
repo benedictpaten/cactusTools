@@ -33,9 +33,9 @@ ${binPath}/cactus_augmentedMaf : ${libPath}/cactusUtils.h ${libPath}/cactusUtils
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_augmentedMaf cactus_augmentedMaf.c ${libPath}/cactusUtils.a ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/cactus_MAFGenerator ${libPath}/cactusMafs.a
-	rm -f ${progs:%=${binPath}/%}
+	rm -rf *.o
+	rm -rf ${binPath}/cactus_MAFGenerator ${libPath}/cactusMafs.a
+	rm -rf ${progs:%=${binPath}/%}
 	
 ${libPath}/cactusMafs.a : mafs.c cactusMafs.h ${basicLibsDependencies}
 	${cxx} ${cflags} -I ${libPath}/ -c mafs.c

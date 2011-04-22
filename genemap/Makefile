@@ -19,5 +19,5 @@ ${binPath}/cactus_genemapHomolog : cactus_genemapHomolog.c ${basicLibsDependenci
 	${cxx} ${cflags} -I ${libPath} cactus_genemapHomolog.c -lpthread -lz -o ${binPath}/cactus_genemapHomolog ${libPath}/cactusUtils.a ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f ${binPath}/cactus_genemap*
-	rm -f ${progs:%=${binPath}/%}
+	rm -rf ${binPath}/cactus_genemap*
+	rm -rf ${progs:%=${binPath}/%}

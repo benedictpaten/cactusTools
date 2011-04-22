@@ -13,8 +13,8 @@ from sonLib.bioio import system
 from sonLib.bioio import getTempDirectory
 
 from cactus.shared.test import getCactusInputs_random
-from cactus.shared.test import runWorkflow_multipleExamples
-from cactus.shared.common import runCactusTreeStatsToLatexTables
+from cactusTools.shared.test import runWorkflow_multipleExamples
+from cactusTools.shared.common import runCactusTreeStatsToLatexTables
 
 class TestCase(unittest.TestCase):
     def testCactus_Random(self):

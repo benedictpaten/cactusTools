@@ -27,7 +27,7 @@ ${binPath}/cactus_getReferenceSeq: cactus_getReferenceSeq.c ${libPath}/cactusLib
 #	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_getReferenceSeq cactus_getReferenceSeq.c ${libPath}/cactus_addReferenceSeq.o ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/cactus_addReferenceSeqTest
-	rm -f ${binPath}/cactus_*ReferenceSeq
-	rm -f ${libPath}/cactus_addReferenceSeq.*
+	rm -rf *.o
+	rm -rf ${binPath}/cactus_addReferenceSeqTest
+	rm -rf ${binPath}/cactus_*ReferenceSeq
+	rm -rf ${libPath}/cactus_addReferenceSeq.*

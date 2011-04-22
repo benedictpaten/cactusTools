@@ -18,5 +18,5 @@ ${binPath}/cactus_pslGenerator : cactus_pslGenerator.c ${libPath}/cactusLib.a ${
 	${cxx} ${cflags} -I ${libPath} -I ${kentInc} -o ${binPath}/cactus_pslGenerator cactus_pslGenerator.c ${jkLibHack} ${kentLibWeb} ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/cactus_pslGenerator
+	rm -rf *.o
+	rm -rf ${binPath}/cactus_pslGenerator

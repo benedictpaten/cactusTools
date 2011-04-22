@@ -10,7 +10,7 @@ from cactus.shared.test import parseCactusSuiteTestOptions
 from sonLib.bioio import TestStatus
 
 from cactus.shared.test import getCactusInputs_random
-from cactus.shared.test import runWorkflow_multipleExamples
+from cactusTools.shared.test import runWorkflow_multipleExamples
 
 class TestCase(unittest.TestCase):
     def testCactus_RandomAlignmentsOnly(self):

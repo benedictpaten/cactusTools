@@ -10,5 +10,5 @@ ${binPath}/cactus_treeViewer : *.c  ${libPath}/cactusLib.a ${basicLibsDependenci
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_treeViewer cactus_treeViewer.c ${libPath}/cactusLib.a ${basicLibs}
 
 clean :
-	rm -f *.o
-	rm -f ${binPath}/cactus_adjacencyGraphViewer ${binPath}/cactus_treeViewer 
+	rm -rf *.o
+	rm -rf ${binPath}/cactus_adjacencyGraphViewer ${binPath}/cactus_treeViewer 
