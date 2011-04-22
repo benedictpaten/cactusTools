@@ -2,4 +2,14 @@ Tools for the Cactus genome alignment program.
 
 Developed by Benedict Paten and Ngan Nguyen at UCSC.
 
-Edit the include.mk file to point to the location of cactus and type 'make all'
+Installation instructions:
+
+(1) Install Cactus
+
+(2) Add the directory containing cactusTools to your python path.
+
+(3) Edit the include.mk file to point to the location of cactus and type 'make all'
+
+(4) Put the bin directory on your path.
+
+(5) Type 'make test' to test the tools suite
