@@ -22,7 +22,8 @@ clean:  ${modules:%=clean.%} clean.cactusUtils
 
 clean.%:
 	cd $* && make clean
+	rm -rf ${binPath}/*.dSYM
 
 clean.cactusUtils:
-	rm -f ${libPath}/cactusUtils.a 
+	rm -f ${libPath}/cactusUtils.a ${libPath}/cactusUtils.h
  

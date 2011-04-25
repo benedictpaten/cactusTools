@@ -11,20 +11,20 @@ all: ${targets}
 #	cp cactus_addReferenceSeq.h ${libPath}
 #	${cxx} ${cflags} -c cactus_addReferenceSeq.c  -I ${libPath} -o ${libPath}/cactus_addReferenceSeq.o
 
-${binPath}/cactus_addReferenceSeq: cactus_addReferenceSeq.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeq cactus_addReferenceSeq.c ${libPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_addReferenceSeq: cactus_addReferenceSeq.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeq cactus_addReferenceSeq.c ${cactusLibPath}/cactusLib.a ${basicLibs}
 
-${binPath}/cactus_addReferenceSeqTest: cactus_addReferenceSeqTest.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeqTest cactus_addReferenceSeqTest.c ${libPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_addReferenceSeqTest: cactus_addReferenceSeqTest.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeqTest cactus_addReferenceSeqTest.c ${cactusLibPath}/cactusLib.a ${basicLibs}
 
-${binPath}/cactus_getReferenceSeq: cactus_getReferenceSeq.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_getReferenceSeq cactus_getReferenceSeq.c ${libPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_getReferenceSeq: cactus_getReferenceSeq.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_getReferenceSeq cactus_getReferenceSeq.c ${cactusLibPath}/cactusLib.a ${basicLibs}
 
-#${binPath}/cactus_addReferenceSeqTest: ${libPath}/cactus_addReferenceSeq.o cactus_addReferenceSeqTest.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-#	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeqTest cactus_addReferenceSeqTest.c ${libPath}/cactus_addReferenceSeq.o ${libPath}/cactusLib.a ${basicLibs}
+#${binPath}/cactus_addReferenceSeqTest: ${libPath}/cactus_addReferenceSeq.o cactus_addReferenceSeqTest.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+#	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_addReferenceSeqTest cactus_addReferenceSeqTest.c ${libPath}/cactus_addReferenceSeq.o ${cactusLibPath}/cactusLib.a ${basicLibs}
 
-#${binPath}/cactus_getReferenceSeq: ${libPath}/cactus_addReferenceSeq.o cactus_getReferenceSeq.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-#	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_getReferenceSeq cactus_getReferenceSeq.c ${libPath}/cactus_addReferenceSeq.o ${libPath}/cactusLib.a ${basicLibs}
+#${binPath}/cactus_getReferenceSeq: ${libPath}/cactus_addReferenceSeq.o cactus_getReferenceSeq.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+#	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_getReferenceSeq cactus_getReferenceSeq.c ${libPath}/cactus_addReferenceSeq.o ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 clean :
 	rm -rf *.o

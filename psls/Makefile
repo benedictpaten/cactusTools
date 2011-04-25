@@ -14,8 +14,8 @@ endif
 
 all: ${targets}
 
-${binPath}/cactus_pslGenerator : cactus_pslGenerator.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -I ${kentInc} -o ${binPath}/cactus_pslGenerator cactus_pslGenerator.c ${jkLibHack} ${kentLibWeb} ${libPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_pslGenerator : cactus_pslGenerator.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -I ${kentInc} -o ${binPath}/cactus_pslGenerator cactus_pslGenerator.c ${jkLibHack} ${kentLibWeb} ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 clean :
 	rm -rf *.o

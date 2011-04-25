@@ -5,8 +5,8 @@ cflags += ${tokyoCabinetIncl}
 
 all : ${libPath}/cactus_transmap.o
 
-${libPath}/cactus_transmap.o : *.c ${libPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I${libPath} -c -o cactus_transmap.o cactus_transmap.c ${libPath}/sonLib.a ${libPath}/cactusLib.a ${basicLibs}
+${libPath}/cactus_transmap.o : *.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I${libPath} -c -o cactus_transmap.o cactus_transmap.c ${libPath}/sonLib.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 clean :
 	rm -f *.o

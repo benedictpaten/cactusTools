@@ -13,10 +13,10 @@ ${binPath}/%: %
 	chmod 775 $@
 
 ${binPath}/cactus_genemapChain : cactus_genemapChain.c ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} cactus_genemapChain.c -lpthread -lz -o ${binPath}/cactus_genemapChain ${libPath}/cactusUtils.a ${libPath}/cactusLib.a ${basicLibs}
+	${cxx} ${cflags} -I ${libPath} cactus_genemapChain.c -lpthread -lz -o ${binPath}/cactus_genemapChain ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 ${binPath}/cactus_genemapHomolog : cactus_genemapHomolog.c ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} cactus_genemapHomolog.c -lpthread -lz -o ${binPath}/cactus_genemapHomolog ${libPath}/cactusUtils.a ${libPath}/cactusLib.a ${basicLibs}
+	${cxx} ${cflags} -I ${libPath} cactus_genemapHomolog.c -lpthread -lz -o ${binPath}/cactus_genemapHomolog ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 clean :
 	rm -rf ${binPath}/cactus_genemap*
