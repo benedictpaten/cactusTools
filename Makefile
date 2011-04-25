@@ -26,4 +26,7 @@ clean.%:
 
 clean.cactusUtils:
 	rm -f ${libPath}/cactusUtils.a ${libPath}/cactusUtils.h
+	
+tests :
+	python allTests.py
  
