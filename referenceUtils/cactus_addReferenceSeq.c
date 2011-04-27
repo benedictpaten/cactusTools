@@ -481,9 +481,9 @@ static void checkAddedReferenceSequence_checkAdjacency(Cap *cap) {
     End *adjacentEnd = cap_getEnd(adjacentCap);
     PseudoAdjacency *pseudoAdjacency = end_getPseudoAdjacency(end);
     assert(pseudoAdjacency != NULL);
-    assert(pseudoAdjacency_get5End(pseudoAdjacency) == pseudoAdjacency_get3End(pseudoAdjacency));
-    assert(end == pseudoAdjacency_get5End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get5End(pseudoAdjacency));
-    assert(end == pseudoAdjacency_get3End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency));
+    assert(pseudoAdjacency_get5End(pseudoAdjacency) != pseudoAdjacency_get3End(pseudoAdjacency));
+    assert(end == pseudoAdjacency_get5End(pseudoAdjacency) || end == pseudoAdjacency_get5End(pseudoAdjacency));
+    assert(adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency));
 }
 
 static void checkAddedReferenceSequence(Flower *flower, const char *referenceEventName) {
@@ -499,7 +499,7 @@ static void checkAddedReferenceSequence(Flower *flower, const char *referenceEve
         bool b = 0;
         while((segment = block_getNext(segmentIt)) != NULL) {
             if(strcmp(event_getHeader(segment_getEvent(segment)), referenceEventName) == 0) {
-                assert(b == 0);
+                assert(!b);
                 b = 1;
                 //Check the adjacency of the caps of the reference segment respect the reference structure
                 checkAddedReferenceSequence_checkAdjacency(segment_get5Cap(segment));
@@ -524,7 +524,7 @@ static void checkAddedReferenceSequence(Flower *flower, const char *referenceEve
 void usage() {
     fprintf(stderr, "cactus_addReferenceSeq, version 0.0\n");
     fprintf(stderr, "-a --logLevel : Set the log level\n");
-    fprintf(stderr, "-b --name : Name of the reference event\n");
+    fprintf(stderr, "-b --referenceEventString : Name of the reference event\n");
     fprintf(
             stderr,
             "-c --cactusDisk : The location of the flower disk directory (the databaseString)\n");
@@ -539,9 +539,8 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         static struct option long_options[] = { { "logLevel",
-                required_argument, 0, 'a' }, { "name", required_argument, 0,
+                required_argument, 0, 'a' }, { "referenceEventString", required_argument, 0,
                 'b' }, { "cactusDisk", required_argument, 0, 'c' },
-        //{ "flowerName", required_argument, 0, 'd' },
                 { "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 
         int option_index = 0;
@@ -587,12 +586,6 @@ int main(int argc, char *argv[]) {
     if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
         st_setLogLevel(ST_LOGGING_DEBUG);
     }
-
-    //////////////////////////////////////////////
-    //Log (some of) the inputs
-    //////////////////////////////////////////////
-
-    st_logInfo("Flower name : %s\n", flowerName);
 
     //////////////////////////////////////////////
     //Load the database

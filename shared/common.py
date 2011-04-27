@@ -65,5 +65,5 @@ def runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, flowerName="0",
     logger.info("Created a MAF for the given cactusDisk")
     
 def runCactusAddReferenceSequence(cactusDiskDatabaseString, flowerName="0",
-                          logLevel="DEBUG", name="reference"):
-    system("cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --name %s" % (cactusDiskDatabaseString, logLevel, name))
+                          logLevel="DEBUG", referenceEventString="reference"):
+    system("cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --referenceEventString %s" % (cactusDiskDatabaseString, logLevel, referenceEventString))
