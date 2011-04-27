@@ -8,7 +8,7 @@ import unittest
 from cactusTools.graphVizPlots.cactus_graphVizTest import TestCase as graphVizTest
 from cactusTools.mafs.cactus_MAFGeneratorTest import TestCase as mAFTest
 from cactusTools.stats.cactus_treeStatsTest import TestCase as statsTest
-from cactusTools.referenceViewer.cactus_addReferenceSequenceTest import TestCase as referenceSequenceTest
+from cactusTools.referenceUtils.cactus_addReferenceSequenceTest import TestCase as referenceSequenceTest
 from cactusTools.referenceViewer.cactus_referenceViewerTest import TestCase as referenceViewerTest
 
 from sonLib.bioio import parseSuiteTestOptions
