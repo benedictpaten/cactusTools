@@ -8,6 +8,7 @@ import unittest
 from cactusTools.graphVizPlots.cactus_graphVizTest import TestCase as graphVizTest
 from cactusTools.mafs.cactus_MAFGeneratorTest import TestCase as mAFTest
 from cactusTools.stats.cactus_treeStatsTest import TestCase as statsTest
+from cactusTools.referenceViewer.cactus_addReferenceSequenceTest import TestCase as referenceSequenceTest
 from cactusTools.referenceViewer.cactus_referenceViewerTest import TestCase as referenceViewerTest
 
 from sonLib.bioio import parseSuiteTestOptions
@@ -16,7 +17,8 @@ def allSuites():
     allTests = unittest.TestSuite((unittest.makeSuite(graphVizTest, 'test'),
                                    unittest.makeSuite(mAFTest, 'test'),
                                    unittest.makeSuite(statsTest, 'test'),
-                                   unittest.makeSuite(referenceViewerTest, 'test')))
+                                   unittest.makeSuite(referenceViewerTest, 'test'),
+                                   unittest.makeSuite(referenceSequenceTest, 'test')))
     return allTests
         
 def main():

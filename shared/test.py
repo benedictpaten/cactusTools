@@ -29,6 +29,7 @@ from cactusTools.shared.common import runCactusReferenceGraphViewer
 from cactusTools.shared.common import runCactusTreeStats
 from cactusTools.shared.common import runCactusMAFGenerator
 from cactusTools.shared.common import runCactusTreeStatsToLatexTables
+from cactusTools.shared.common import runCactusAddReferenceSequence
 
 from sonLib.bioio import TestStatus
 
@@ -46,6 +47,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
                            databaseName=None,
                            batchSystem="single_machine",
                            buildTrees=True, buildFaces=True, buildReference=True,
+                           buildReferenceSequence=False,
                            buildCactusPDF=False,
                            buildAdjacencyPDF=False,
                            buildReferencePDF=False,
@@ -73,6 +75,10 @@ def runWorkflow_TestScript(sequences, newickTreeString,
                            configFile=configFile,
                            buildJobTreeStats=buildJobTreeStats)
     cactusDiskDatabaseString = experiment.getDatabaseString()
+    
+    if buildReferenceSequence:
+        runCactusAddReferenceSequence(cactusDiskDatabaseString)
+        logger.info("Ran add reference sequence to the maf")
     
     #Run the cactus tree graph-viz plot
     if buildCactusPDF:
@@ -135,6 +141,7 @@ def runWorkflow_multipleExamples(inputGenFunction,
                                outputDir=None,
                                batchSystem="single_machine",
                                buildTrees=True, buildFaces=True, buildReference=True,
+                               buildReferenceSequence=False,
                                buildCactusPDF=False, buildAdjacencyPDF=False,
                                buildReferencePDF=False,
                                makeCactusTreeStats=False, makeMAFs=False,
@@ -159,6 +166,7 @@ def runWorkflow_multipleExamples(inputGenFunction,
             experiment = runWorkflow_TestScript(sequences, newickTreeString,
                                    outputDir=out, databaseName=databaseName, batchSystem=batchSystem,
                                    buildTrees=buildTrees, buildFaces=buildFaces, buildReference=buildReference, 
+                                   buildReferenceSequence=buildReferenceSequence,
                                    buildCactusPDF=buildCactusPDF, buildAdjacencyPDF=buildAdjacencyPDF,
                                    buildReferencePDF=buildReferencePDF,
                                    makeCactusTreeStats=makeCactusTreeStats, makeMAFs=makeMAFs, configFile=configFile,

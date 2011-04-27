@@ -13,10 +13,6 @@
 #include <getopt.h>
 
 #include "cactus.h"
-#include "avl.h"
-#include "commonC.h"
-#include "hashTableC.h"
-#include "cactus_addReferenceSeq.h"
 
 /*
  */
@@ -25,11 +21,9 @@ void usage() {
     fprintf(stderr, "cactus_getReferenceSeq, version 0.0\n");
     fprintf(stderr, "-a --logLevel : Set the log level\n");
     fprintf(stderr,
-            "-b --name : name of the reference sequence\n");
+            "-b --name : name of the reference sequence's event\n");
     fprintf(stderr,
             "-c --cactusDisk : The location of the flower disk directory\n");
-    fprintf(stderr,
-            "-d --flowerName : The name of the flower (the key in the database)\n");
     fprintf(stderr,
             "-e --outputFile : Name of output fasta file\n");
     fprintf(stderr, "-h --help : Print this help screen\n");
@@ -96,7 +90,7 @@ int main(int argc, char *argv[]) {
     char * cactusDiskDatabaseString = NULL;
     char * flowerName = NULL;
     char * outputFile = NULL;
-    char *name = NULL;
+    char *referenceEventString = NULL;
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -105,7 +99,7 @@ int main(int argc, char *argv[]) {
     while (1) {
         static struct option long_options[] = { 
                 { "logLevel", required_argument, 0, 'a' }, 
-                { "name", required_argument, 0, 'b' }, 
+                { "referenceEventString", required_argument, 0, 'b' },
                 { "cactusDisk", required_argument, 0, 'c' }, 
 		{ "flowerName", required_argument, 0, 'd' },
 		{ "outputFile", required_argument, 0, 'e' },
@@ -125,7 +119,7 @@ int main(int argc, char *argv[]) {
                 logLevelString = stString_copy(optarg);
                 break;
             case 'b':
-                name = stString_copy(optarg);
+                referenceEventString = stString_copy(optarg);
                 break;
             case 'c':
                 cactusDiskDatabaseString = stString_copy(optarg);
@@ -150,7 +144,7 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
 
     assert(flowerName != NULL);
-    assert(name != NULL);
+    assert(referenceEventString != NULL);
     assert(cactusDiskDatabaseString != NULL);
     assert(outputFile != NULL);
 
@@ -170,7 +164,7 @@ int main(int argc, char *argv[]) {
     //////////////////////////////////////////////
 
     st_logInfo("Flower name : %s\n", flowerName);
-    st_logInfo("Sequence name : %s\n", name);
+    st_logInfo("Sequence name : %s\n", referenceEventString);
     st_logInfo("Output file : %s\n", outputFile);
 
     //////////////////////////////////////////////
@@ -199,13 +193,13 @@ int main(int argc, char *argv[]) {
     //st_logInfo("Added the reference sequence in %i seconds/\n", time(NULL) - startTime);
 
     //Make sure that referenceSequence has already been added:
-    if(getSequenceMatchesHeader(flower, name) == NULL){
+    if(getSequenceMatchesHeader(flower, referenceEventString) == NULL){
         fprintf(stderr, "No reference sequence found in cactusDisk\n");
         exit(EXIT_FAILURE); 
     }
 
     FILE *fileHandle = fopen(outputFile, "w");
-    getReferenceSequences(fileHandle, flower, name);
+    getReferenceSequences(fileHandle, flower, referenceEventString);
     fclose(fileHandle);
 
     ///////////////////////////////////////////////////////////////////////////
