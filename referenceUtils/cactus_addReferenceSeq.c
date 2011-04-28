@@ -350,13 +350,14 @@ void addReferenceAdjacencies(End *end, char *header) {
 }
 
 MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
-        ReferenceSequence *refseq) {
+        ReferenceSequence *refseq, Event *event) {
     /*
      *Traverse pseudochromosome (of 'end') and its lower levels to get the reference MetaSequence
      */
     st_logInfo("Getting reference MetaSequence...\n");
-    Event *event = eventTree_getRootEvent(
-            flower_getEventTree(end_getFlower(end)));
+    //EventTree *eventTree = flower_getEventTree(end_getFlower(end));
+    //Event *rootEvent = eventTree_getRootEvent(eventTree);
+    //Event *event = event_construct4(header, INT32_MAX, rootEvent, event_getChild(rootEvent, 0), eventTree);
     Name eventName = event_getName(event);
     MetaSequence *metaSequence;
     int32_t start = 1;
@@ -375,6 +376,9 @@ void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower) {
     assert(flower != NULL);
     //add reference sequence to current flower
     sequence_construct(metaSequence, flower);
+    //st_logInfo("Flower %s, MetaSequence event: %s\n", cactusMisc_nameToString(flower_getName(flower)), cactusMisc_nameToString(metaSequence_getEventName(metaSequence)));
+    //Sequence *sequence = sequence_construct(metaSequence, flower);
+    //st_logInfo("sequence event: %s\n", event_getHeader(sequence_getEvent(sequence)));
 
     //recursively add reference sequence to lower-level flowers
     Flower_GroupIterator *it = flower_getGroupIterator(flower);
@@ -402,12 +406,74 @@ char *getChromName(char *name, int num) {
     return chromName;
 }
 
+Event *eventTree_getEventByHeader(EventTree *eventTree, char *header){
+    EventTree_Iterator *it = eventTree_getIterator(eventTree);
+    Event *event;
+    while((event = eventTree_getNext(it)) != NULL){
+        if( strcmp(event_getHeader(event), header) == 0 ){
+            eventTree_destructIterator(it);
+            return event;
+        }
+    }
+    eventTree_destructIterator(it);
+    return NULL;
+}
+
+void addReferenceEvent2(Flower *flower, char *header, Name eventName){
+    EventTree *eventTree = flower_getEventTree(flower);
+    Event *rootEvent = eventTree_getRootEvent(eventTree);
+    assert(eventName);
+    Event *event = event_construct2(eventName, header, INT32_MAX, rootEvent, event_getChild(rootEvent, 0), eventTree);
+
+    //Recursively addRefernceEvent for lower flowers
+    Flower_GroupIterator *it = flower_getGroupIterator(flower);
+    Group *group;
+    while( (group = flower_getNextGroup(it)) != NULL ){
+        Flower *nestedFlower = group_getNestedFlower(group);
+        if(nestedFlower){
+            addReferenceEvent2(nestedFlower, header, event_getName(event));
+        }
+    }
+    flower_destructGroupIterator(it);
+    return;
+}
+
+Event *addReferenceEvent(Flower *flower, char *header){
+    EventTree *eventTree = flower_getEventTree(flower);
+    Event *rootEvent = eventTree_getRootEvent(eventTree);
+    Event *event = event_construct4(header, INT32_MAX, rootEvent, event_getChild(rootEvent, 0), eventTree);
+    
+    //Recursively addRefernceEvent for lower flowers
+    Flower_GroupIterator *it = flower_getGroupIterator(flower);
+    Group *group;
+    while( (group = flower_getNextGroup(it)) != NULL ){
+        Flower *nestedFlower = group_getNestedFlower(group);
+        if(nestedFlower){
+            addReferenceEvent2(nestedFlower, header, event_getName(event));
+        }
+    }
+    flower_destructGroupIterator(it);
+    return event;
+}
+
 /*
  *Adding the reference sequence of each pseudoChrom to cactus structure.
  *'header' is going to be set as the reference's name
  */
 Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         char *header) {
+    //Return if event with 'header' has already existed. Otherwise, add event 'header'
+    EventTree *eventTree = flower_getEventTree(flower);
+    Event *event;
+    event = eventTree_getEventByHeader(eventTree, header);
+    if(event) {
+        return flower;
+    }else{
+        event = addReferenceEvent(flower, header);
+        //event = eventTree_getEventByHeader(eventTree, header);
+        assert(event != NULL);
+    }
+
     Reference *reference = flower_getReference(flower);
     assert(reference != NULL);
     Reference_PseudoChromosomeIterator *it =
@@ -422,8 +488,8 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         assert(!end_isBlockEnd(end));
 
         int len = pseudoChromosome_getLength(end);
-        //if(len == 0){continue;}
-        assert(len != 0);
+        if(len == 0){continue;}
+        //assert(len != 0);
         ReferenceSequence *refseq = referenceSequence_construct(flower,
                 chromHeader, len);
 
@@ -433,13 +499,14 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
 
         //Construct the MetaSequence 
         MetaSequence *metaSequence = constructReferenceMetaSequence(end,
-                cactusDisk, refseq);
+                cactusDisk, refseq, event);
         st_logInfo(
-                "Got metasequence: name *%s*, start %d, length %d, header *%s*\n",
+                "Got metasequence: name *%s*, start %d, length %d, header *%s*, event %s\n",
                 cactusMisc_nameToString(metaSequence_getName(metaSequence)),
                 metaSequence_getStart(metaSequence),
                 metaSequence_getLength(metaSequence),
-                metaSequence_getHeader(metaSequence));
+                metaSequence_getHeader(metaSequence),
+                event_getHeader(eventTree_getEvent(eventTree, metaSequence_getEventName(metaSequence))));
 
         st_logInfo("\nConstructing reference sequence...\n");
         constructReferenceSequence(metaSequence, flower);
@@ -448,6 +515,7 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         //Add startStub (3' end)
         Sequence *sequence = getSequenceByHeader(flower, refseq->header);
         Cap *startcap = cap_construct2(end, refseq->index, true, sequence);
+        //Cap *startcap = cap_construct(end, event);
         cap_check(startcap);
         refseq->index++;
         copyRefCapToLowerFlowers(startcap);
@@ -482,8 +550,10 @@ static void checkAddedReferenceSequence_checkAdjacency(Cap *cap) {
     PseudoAdjacency *pseudoAdjacency = end_getPseudoAdjacency(end);
     assert(pseudoAdjacency != NULL);
     assert(pseudoAdjacency_get5End(pseudoAdjacency) != pseudoAdjacency_get3End(pseudoAdjacency));
-    assert(end == pseudoAdjacency_get5End(pseudoAdjacency) || end == pseudoAdjacency_get5End(pseudoAdjacency));
-    assert(adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency));
+    //assert(end == pseudoAdjacency_get5End(pseudoAdjacency) || end == pseudoAdjacency_get5End(pseudoAdjacency));
+    //assert(adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency));
+    assert( (end == pseudoAdjacency_get5End(pseudoAdjacency) && adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency)) ||
+            (end == pseudoAdjacency_get3End(pseudoAdjacency) && adjacentEnd == pseudoAdjacency_get5End(pseudoAdjacency)) );
 }
 
 static void checkAddedReferenceSequence(Flower *flower, const char *referenceEventName) {
@@ -610,7 +680,6 @@ int main(int argc, char *argv[]) {
 
     int64_t startTime = time(NULL);
     flower = flower_addReferenceSequence(flower, cactusDisk, name);
-    //Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk, char *header){
 
     //test(flower);
     st_logInfo("Added the reference sequence in %i seconds/\n",
