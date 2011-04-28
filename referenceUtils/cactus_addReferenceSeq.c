@@ -151,6 +151,9 @@ char *getConsensusString(Block *block) {
     }
     block_destructInstanceIterator(it);
     assert(list->length > 0);
+    if(list->length == 1){
+        return list->list[0];
+    }
     //st_logInfo("Number of segments: %d\n", list->length);
 
     char *consensusStr = stString_copy(list->list[0]);
