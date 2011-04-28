@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
@@ -138,16 +139,52 @@ char *formatSequenceHeader1(Sequence *sequence) {
  }*/
 
 char *getConsensusString(Block *block) {
+    //st_logInfo("\nGetting consensus string...:\n");
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     Segment *segment;
+    struct List *list = constructEmptyList(0, free);
     while ((segment = block_getNext(it)) != NULL) {
         if (segment_getSequence(segment) != NULL) {
-            block_destructInstanceIterator(it);
-            return segment_getString(segment);
+            listAppend(list, segment_getString(segment));
+            //st_logInfo("%s\n", segment_getString(segment));
         }
     }
-    assert(0);
-    return NULL;
+    block_destructInstanceIterator(it);
+    assert(list->length > 0);
+    //st_logInfo("Number of segments: %d\n", list->length);
+
+    char *consensusStr = stString_copy(list->list[0]);
+    //st_logInfo("Initialize consensusStr: %s\n", consensusStr);
+    char bases[] = {'A', 'C', 'G', 'T', 'N'};
+    int numchar = 5;
+    for(int32_t i=0; i < strlen(consensusStr); i++){//each base position
+        int32_t freq[] = {0, 0, 0, 0, 0};
+        for(int32_t j=0; j < list->length; j++){//each segment in the block
+            char *str = list->list[j];
+            char base = toupper( *(str + i) );
+            int k;
+            for (k = 0; k < numchar; k++){
+                if( base == bases[k] ){
+                    freq[k] += 1;
+                    break;
+                }
+            }
+            assert(k < numchar);
+        }
+        int32_t max = 0;
+        //st_logInfo("Pos %d, base freq: ", i);
+        for(int k = 0; k < numchar; k++){
+            //st_logInfo("%c: %d, ", bases[k], freq[k]);
+            if (max < freq[k]){
+                max = freq[k];
+                *(consensusStr + i) = bases[k];
+            }
+        }
+        //st_logInfo("\n");
+    }
+    //st_logInfo("ConsensusStr: %s\n", consensusStr);
+
+    return consensusStr;
 }
 
 Sequence *getSequenceByHeader(Flower *flower, char *header) {
