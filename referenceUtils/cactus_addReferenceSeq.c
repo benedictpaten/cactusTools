@@ -612,11 +612,8 @@ static void checkAddedReferenceSequence_checkAdjacency(Cap *cap) {
     PseudoAdjacency *pseudoAdjacency = end_getPseudoAdjacency(end);
     assert(pseudoAdjacency != NULL);
     assert(pseudoAdjacency_get5End(pseudoAdjacency) != pseudoAdjacency_get3End(pseudoAdjacency));
-    assert(end == pseudoAdjacency_get5End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get5End(pseudoAdjacency));
-    assert(end == pseudoAdjacency_get3End(pseudoAdjacency) || adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency));
-    
-    //assert( (end == pseudoAdjacency_get5End(pseudoAdjacency) && adjacentEnd == pseudoAdjacency_get3End(pseudoAdjacency)) ||
-    //        (end == pseudoAdjacency_get3End(pseudoAdjacency) && adjacentEnd == pseudoAdjacency_get5End(pseudoAdjacency)) );
+    assert(end_getPositiveOrientation(end) == pseudoAdjacency_get5End(pseudoAdjacency) || end_getPositiveOrientation(adjacentEnd) == pseudoAdjacency_get5End(pseudoAdjacency));
+    assert(end_getPositiveOrientation(end) == pseudoAdjacency_get3End(pseudoAdjacency) || end_getPositiveOrientation(adjacentEnd) == pseudoAdjacency_get3End(pseudoAdjacency));
 }
 
 static void checkAddedReferenceSequence(Flower *flower, const char *referenceEventName) {
