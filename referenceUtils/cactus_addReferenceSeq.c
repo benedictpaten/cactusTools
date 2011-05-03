@@ -30,18 +30,19 @@ typedef struct _refseq {
 End *getPseudoAdjacentEnd(End *end) {
     assert(end != NULL);
     PseudoAdjacency *pseudoAdjacency = end_getPseudoAdjacency(end);
+    End *adjend;
     assert(pseudoAdjacency != NULL);
+
     assert(
             pseudoAdjacency_get3End(pseudoAdjacency) == end
                     || pseudoAdjacency_get5End(pseudoAdjacency) == end);
     //assert( pseudoAdjacency_get3End(pseudoAdjacency) != pseudoAdjacency_get5End(pseudoAdjacency) );
     if (pseudoAdjacency_get3End(pseudoAdjacency) == end) {
-        end = pseudoAdjacency_get5End(pseudoAdjacency);
+        adjend = pseudoAdjacency_get5End(pseudoAdjacency);
     } else {
-        end = pseudoAdjacency_get3End(pseudoAdjacency);
+        adjend = pseudoAdjacency_get3End(pseudoAdjacency);
     }
-
-    return end;
+    return adjend;
 }
 
 static int32_t pseudoChromosome_getLength(End *end) {
@@ -214,6 +215,7 @@ Cap *end_getCapByHeader(End *end, char *header) {
     Cap *cap;
     while ((cap = end_getNext(it)) != NULL) {
         Sequence *sequence = cap_getSequence(cap);
+        assert(cap_getSide(cap) == end_getSide(end));
         if (sequence != NULL) {
             char *sequenceHeader = formatSequenceHeader1(sequence);
             if (strcmp(sequenceHeader, header) == 0) {
@@ -234,6 +236,12 @@ Segment *addReferenceSegmentToBlock(End *end, ReferenceSequence *refseq) {
         end = end_getReverse(end);
     }*/
     Block *block = end_getBlock(end);
+    End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
+    assert(pseudoAdjEnd);
+    if( end_getSide(pseudoAdjEnd) == end_getSide(end) ){
+        block = block_getReverse(block);
+    }
+
     Sequence *sequence = getSequenceByHeader(block_getFlower(block),
             refseq->header);
     assert(sequence != NULL);
@@ -243,7 +251,7 @@ Segment *addReferenceSegmentToBlock(End *end, ReferenceSequence *refseq) {
      }*/
 
     //Adding segment to block
-    Segment *segment = segment_construct2(block, refseq->index, "+", sequence);
+    Segment *segment = segment_construct2(block, refseq->index, true, sequence);
     refseq->index += block_getLength(block);
     return segment;
 }
@@ -277,7 +285,8 @@ Cap *copyRefCapToLowerFlowers(Cap *cap) {
     Flower *nestedflower = group_getNestedFlower(group);
     if (nestedflower != NULL) { //has lower level
         End *inheritedEnd = flower_getEnd(nestedflower, end_getName(end));
-        if (cap_getSide(cap) != end_getSide(inheritedEnd)) {//make sure end & inheritedEnd are the same
+        //if (cap_getSide(cap) != end_getSide(inheritedEnd)) {//make sure end & inheritedEnd are the same
+        if (end_getSide(end) != end_getSide(inheritedEnd)) {//make sure end & inheritedEnd are the same
             inheritedEnd = end_getReverse(inheritedEnd);
         }
         cap = cap_copyConstruct(inheritedEnd, cap);
@@ -294,6 +303,9 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
         if (strlen(refseq->string) == refseq->length) {
             //if(block_getInstanceNumber(block) > 0){
             Segment *segment = addReferenceSegmentToBlock(end, refseq);
+            st_logInfo("checking newly added segment...\n");
+            segment_check(segment);
+            st_logInfo("done\n");
             copyRefCapToLowerFlowers(segment_get5Cap(segment));
             copyRefCapToLowerFlowers(segment_get3Cap(segment));
             //}
@@ -319,6 +331,10 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
             if (refseq->index > 0) {
                 Sequence *sequence = getSequenceByHeader(end_getFlower(end),
                         refseq->header);
+                End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
+                if( end_getSide(pseudoAdjEnd) == end_getSide(end) ){
+                    end = end_getReverse(end);
+                }
                 Cap *endCap = cap_construct2(end, refseq->index, true, sequence);
                 copyRefCapToLowerFlowers(endCap);
             }
@@ -351,11 +367,14 @@ void addAdj(End *end, End *adjEnd, char *header) {
     Cap *cap2 = end_getCapByHeader(adjEnd, header);
     assert(cap != NULL);
     assert(cap2 != NULL);
-    /*if (cap_getSide(cap) == cap_getSide(cap2)) {
-        cap2 = cap_getReverse(cap2);
-    }
-    assert(cap_getSide(cap) != cap_getSide(cap2));*/
     cap_makeAdjacent(cap, cap2);
+    
+    //DEBUG
+    st_logInfo("checking cap..\n");
+    cap_check(cap);
+    cap_check(cap2);
+    st_logInfo("ok\n");
+    //END DEBUG
 }
 
 /*
@@ -377,6 +396,9 @@ void addReferenceAdjacencies(End *end, char *header) {
         if (!group_isLeaf(group)) {//has lower level
             End *inheritedEnd = flower_getEnd(group_getNestedFlower(group),
                     end_getName(end));
+            if(end_getSide(end) != end_getSide(inheritedEnd)){
+                inheritedEnd = end_getReverse(inheritedEnd);
+            }
             addReferenceAdjacencies(inheritedEnd, header);
         }
 
@@ -555,6 +577,7 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         Sequence *sequence = getSequenceByHeader(flower, refseq->header);
         Cap *startcap = cap_construct2(end, refseq->index, true, sequence);
         //Cap *startcap = cap_construct(end, event);
+
         cap_check(startcap);
         refseq->index++;
         copyRefCapToLowerFlowers(startcap);
