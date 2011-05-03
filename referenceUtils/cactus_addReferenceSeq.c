@@ -353,8 +353,8 @@ void addAdj(End *end, End *adjEnd, char *header) {
     assert(cap2 != NULL);
     /*if (cap_getSide(cap) == cap_getSide(cap2)) {
         cap2 = cap_getReverse(cap2);
-    }*/
-    //assert(cap_getSide(cap) != cap_getSide(cap2));
+    }
+    assert(cap_getSide(cap) != cap_getSide(cap2));*/
     cap_makeAdjacent(cap, cap2);
 }
 
@@ -730,7 +730,7 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
 
     checkAddedReferenceSequence(flower, name);
-    flower_check(flower);
+    flower_checkRecursive(flower);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.
