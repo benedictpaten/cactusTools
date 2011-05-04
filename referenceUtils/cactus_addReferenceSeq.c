@@ -267,7 +267,6 @@ Cap *copyRefCapToLowerFlowers(Cap *cap) {
 }
 
 void addStubAdjacency(End *end, char *header){
-    st_logInfo("addStubAdjacency...\n");
     End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
     addAdj(end, pseudoAdjEnd, header);
     Group *group = end_getGroup(end);
@@ -276,7 +275,6 @@ void addStubAdjacency(End *end, char *header){
         End *inheritedEnd = flower_getEnd(nestedflower, end_getName(end));
         addStubAdjacency(inheritedEnd, header);
     }
-    st_logInfo("done\n");
     return;
 }
 
@@ -514,9 +512,9 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         copyRefCapToLowerFlowers(startcap);
 
         //adding reference Segments to the blocks and creating inherited caps
-        st_logInfo("Adding reference segments...\n");
+        st_logInfo("Adding reference segments and adjacencies...\n");
         reference_walkDown(end, refseq);
-        st_logInfo("Added reference segments successfully.\n");
+        st_logInfo("Added reference segments and adjacencies successfully.\n");
 
         //write to Disk:
         cactusDisk_write(cactusDisk);
