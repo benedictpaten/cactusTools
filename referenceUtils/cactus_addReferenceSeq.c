@@ -109,36 +109,6 @@ char *formatSequenceHeader1(Sequence *sequence) {
     }
 }
 
-/*int32_t getNumberOnPositiveStrand(Block *block) {
- Block_InstanceIterator *it = block_getInstanceIterator(block);
- Segment *segment;
- int32_t i = 0;
- while ((segment = block_getNext(it)) != NULL) {
- if (segment_getChildNumber(segment) == 0) {
- if (segment_getStrand(segment)) {
- i++;
- }
- }
- }
- block_destructInstanceIterator(it);
- return i;
- }
-
- int32_t ref_getNumberOnPositiveStrand(Block *block) {
- Block_InstanceIterator *it = block_getInstanceIterator(block);
- Segment *segment;
- int32_t i = 0;
- while ((segment = block_getNext(it)) != NULL) {
- if (segment_getChildNumber(segment) == 0) {
- if (segment_getStrand(segment)) {
- i++;
- }
- }
- }
- block_destructInstanceIterator(it);
- return i;
- }*/
-
 char *getConsensusString(Block *block) {
     //st_logInfo("\nGetting consensus string...:\n");
     Block_InstanceIterator *it = block_getInstanceIterator(block);
@@ -229,30 +199,39 @@ Cap *end_getCapByHeader(End *end, char *header) {
     return NULL;
 }
 
+void addAdj(End *end, End *adjEnd, char *header) {
+    /*
+     *Add adjacency between caps of 'header' sequence in 'end' and 'adjEnd'
+     */
+    Cap *cap = end_getCapByHeader(end, header);
+    Cap *cap2 = end_getCapByHeader(adjEnd, header);
+    assert(cap != NULL);
+    assert(cap2 != NULL);
+    cap_makeAdjacent(cap, cap2);
+    //cap_check(cap);
+    //cap_check(cap2);
+}
+
 Segment *addReferenceSegmentToBlock(End *end, ReferenceSequence *refseq) {
     /*
      */
-    /*if (!end_getSide(end)) {
-        end = end_getReverse(end);
-    }*/
-    Block *block = end_getBlock(end);
     End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
-    assert(pseudoAdjEnd);
-    if( end_getSide(pseudoAdjEnd) == end_getSide(end) ){
-        block = block_getReverse(block);
-    }
+    Cap *adjcap = end_getCapByHeader(pseudoAdjEnd, refseq->header);
+    assert(adjcap);
+    bool strand = end_getSide(pseudoAdjEnd) != end_getSide(end) ? cap_getStrand(adjcap) : cap_getStrand(cap_getReverse(adjcap));
+    Block *block = end_getBlock(end);
 
     Sequence *sequence = getSequenceByHeader(block_getFlower(block),
             refseq->header);
     assert(sequence != NULL);
-    //Correct the orientation..
-    /*if (getNumberOnPositiveStrand(block) == 0) {
-     block = block_getReverse(block);
-     }*/
 
     //Adding segment to block
-    Segment *segment = segment_construct2(block, refseq->index, true, sequence);
+    Segment *segment = segment_construct2(block, refseq->index, strand, sequence);
     refseq->index += block_getLength(block);
+
+    //Adding adj
+    addAdj(end, pseudoAdjEnd, refseq->header);
+    
     return segment;
 }
 
@@ -260,14 +239,7 @@ void block_metaSequence(End *end, ReferenceSequence *refseq) {
     /*
      *Adding sequence of end's block to MetaSequence
      */
-    /*if (!end_getSide(end)) {
-        end = end_getReverse(end);
-    }*/
     Block *block = end_getBlock(end);
-    //Correct the orientation..
-    /*if (ref_getNumberOnPositiveStrand(block) == 0) {
-     block = block_getReverse(block);
-     }*/
     if (block_getInstanceNumber(block) > 0) {
         char *instanceString = getConsensusString(block);
         refseq->string = strcat(refseq->string, instanceString);
@@ -285,7 +257,6 @@ Cap *copyRefCapToLowerFlowers(Cap *cap) {
     Flower *nestedflower = group_getNestedFlower(group);
     if (nestedflower != NULL) { //has lower level
         End *inheritedEnd = flower_getEnd(nestedflower, end_getName(end));
-        //if (cap_getSide(cap) != end_getSide(inheritedEnd)) {//make sure end & inheritedEnd are the same
         if (end_getSide(end) != end_getSide(inheritedEnd)) {//make sure end & inheritedEnd are the same
             inheritedEnd = end_getReverse(inheritedEnd);
         }
@@ -293,6 +264,20 @@ Cap *copyRefCapToLowerFlowers(Cap *cap) {
         copyRefCapToLowerFlowers(cap);
     }
     return cap;
+}
+
+void addStubAdjacency(End *end, char *header){
+    st_logInfo("addStubAdjacency...\n");
+    End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
+    addAdj(end, pseudoAdjEnd, header);
+    Group *group = end_getGroup(end);
+    Flower *nestedflower = group_getNestedFlower(group);
+    if(nestedflower != NULL){
+        End *inheritedEnd = flower_getEnd(nestedflower, end_getName(end));
+        addStubAdjacency(inheritedEnd, header);
+    }
+    st_logInfo("done\n");
+    return;
 }
 
 void reference_walkDown(End *end, ReferenceSequence *refseq);
@@ -303,9 +288,7 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
         if (strlen(refseq->string) == refseq->length) {
             //if(block_getInstanceNumber(block) > 0){
             Segment *segment = addReferenceSegmentToBlock(end, refseq);
-            st_logInfo("checking newly added segment...\n");
             segment_check(segment);
-            st_logInfo("done\n");
             copyRefCapToLowerFlowers(segment_get5Cap(segment));
             copyRefCapToLowerFlowers(segment_get3Cap(segment));
             //}
@@ -322,6 +305,9 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
                 parentEnd = end_getReverse(parentEnd);
             }
             reference_walkUp(parentEnd, refseq);
+            if(refseq->index > 0){
+                addAdj(end, getPseudoAdjacentEnd(end), refseq->header);
+            }
         } else { //We reached the end of a pseudo-chromosome!
             assert(
                     pseudoChromosome_get3End(
@@ -337,6 +323,8 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
                 }
                 Cap *endCap = cap_construct2(end, refseq->index, true, sequence);
                 copyRefCapToLowerFlowers(endCap);
+
+                addStubAdjacency(end, refseq->header);
             }
         }
     }
@@ -357,63 +345,6 @@ void reference_walkDown(End *end, ReferenceSequence *refseq) {
         }
         reference_walkDown(inheritedEnd, refseq);
     }
-}
-
-void addAdj(End *end, End *adjEnd, char *header) {
-    /*
-     *Add adjacency between caps of 'header' sequence in 'end' and 'adjEnd'
-     */
-    Cap *cap = end_getCapByHeader(end, header);
-    Cap *cap2 = end_getCapByHeader(adjEnd, header);
-    assert(cap != NULL);
-    assert(cap2 != NULL);
-    cap_makeAdjacent(cap, cap2);
-    
-    //DEBUG
-    st_logInfo("checking cap..\n");
-    cap_check(cap);
-    cap_check(cap2);
-    st_logInfo("ok\n");
-    //END DEBUG
-}
-
-/*
- *1/ Walk along (across) current flower and add adjacencies between caps of the 
- *reference segments. Once reach the end of the pseudochromosome, 
- *return the last block-end cap
- *2/ Recursively add adjs of lower-level flower
- */
-void addReferenceAdjacencies(End *end, char *header) {
-    End *adjEnd = getPseudoAdjacentEnd(end);//start of block
-    //assert(end_isBlockEnd(adjEnd));    
-    /*if(end_isStubEnd(adjEnd)){
-     return;
-     }*/
-
-    //while( end_isBlockEnd(adjEnd) ){
-    while (true) {
-        Group *group = end_getGroup(end);
-        if (!group_isLeaf(group)) {//has lower level
-            End *inheritedEnd = flower_getEnd(group_getNestedFlower(group),
-                    end_getName(end));
-            if(end_getSide(end) != end_getSide(inheritedEnd)){
-                inheritedEnd = end_getReverse(inheritedEnd);
-            }
-            addReferenceAdjacencies(inheritedEnd, header);
-        }
-
-        addAdj(end, adjEnd, header);
-        if (end_isStubEnd(adjEnd)) {
-            break;
-        } else {
-            end = end_getOtherBlockEnd(adjEnd);
-            adjEnd = getPseudoAdjacentEnd(end);
-        }
-    }
-    //add adjacency to the last stub:
-    //addAdj(end, adjEnd, header);
-
-    return;
 }
 
 MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
@@ -586,11 +517,6 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         st_logInfo("Adding reference segments...\n");
         reference_walkDown(end, refseq);
         st_logInfo("Added reference segments successfully.\n");
-
-        //adding adjacencies to the reference caps 
-        st_logInfo("Adding adjacencies to the reference caps...\n");
-        addReferenceAdjacencies(end, chromHeader);
-        st_logInfo("Added adjacencies to the reference caps successfully.\n");
 
         //write to Disk:
         cactusDisk_write(cactusDisk);
