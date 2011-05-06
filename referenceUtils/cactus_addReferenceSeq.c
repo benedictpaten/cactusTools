@@ -239,7 +239,9 @@ void block_metaSequence(End *end, ReferenceSequence *refseq) {
     /*
      *Adding sequence of end's block to MetaSequence
      */
-    Block *block = end_getBlock(end);
+    End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
+    Block *block = end_getSide(end) != end_getSide(pseudoAdjEnd) ? end_getBlock(end) : end_getBlock(end_getReverse(end));
+    //Block *block = end_getBlock(end);
     if (block_getInstanceNumber(block) > 0) {
         char *instanceString = getConsensusString(block);
         refseq->string = strcat(refseq->string, instanceString);
