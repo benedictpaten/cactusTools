@@ -123,7 +123,9 @@ char *getConsensusString(Block *block) {
     block_destructInstanceIterator(it);
     assert(list->length > 0);
     if(list->length == 1){
-        return list->list[0];
+        char *cA = stString_copy(list->list[0]);
+        destructList(list);
+        return cA;
     }
     //st_logInfo("Number of segments: %d\n", list->length);
 
@@ -157,7 +159,7 @@ char *getConsensusString(Block *block) {
         //st_logInfo("\n");
     }
     //st_logInfo("ConsensusStr: %s\n\n", consensusStr);
-
+    destructList(list);
     return consensusStr;
 }
 
@@ -171,6 +173,7 @@ Sequence *getSequenceByHeader(Flower *flower, char *header) {
             free(sequenceHeader);
             return sequence;
         }
+        free(sequenceHeader);
     }
     flower_destructSequenceIterator(it);
     return NULL;
@@ -193,6 +196,7 @@ Cap *end_getCapByHeader(End *end, char *header) {
                 free(sequenceHeader);
                 return cap;
             }
+            free(sequenceHeader);
         }
     }
     end_destructInstanceIterator(it);
@@ -494,30 +498,30 @@ Event *addReferenceEvent(Flower *flower, char *header){
  */
 Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         char *header) {
-    int64_t starttime = time(NULL);
+    int64_t startTime = time(NULL);
     //Return if event with 'header' has already existed. Otherwise, add event 'header'
     EventTree *eventTree = flower_getEventTree(flower);
-    st_logInfo("flower_getEventTree:\t%d seconds\n", time(NULL) - starttime);
+    st_logInfo("flower_getEventTree:\t%d seconds\n", time(NULL) - startTime);
 
     Event *event;
 
-    starttime = time(NULL);
+    startTime = time(NULL);
     event = eventTree_getEventByHeader(eventTree, header);
-    st_logInfo("eventTree_getEventByHeader:\t%d seconds\n", time(NULL) - starttime);
+    st_logInfo("eventTree_getEventByHeader:\t%d seconds\n", time(NULL) - startTime);
 
     if(event) {
         return flower;
     }else{
-        starttime = time(NULL);
+        startTime = time(NULL);
         event = addReferenceEvent(flower, header);
-        st_logInfo("addReferenceEvent:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("addReferenceEvent:\t%d seconds\n", time(NULL) - startTime);
         //event = eventTree_getEventByHeader(eventTree, header);
         assert(event != NULL);
     }
 
-    starttime = time(NULL);
+    startTime = time(NULL);
     Reference *reference = flower_getReference(flower);
-    st_logInfo("flower_getReference:\t%d seconds\n", time(NULL) - starttime);
+    st_logInfo("flower_getReference:\t%d seconds\n", time(NULL) - startTime);
     
     assert(reference != NULL);
     Reference_PseudoChromosomeIterator *it =
@@ -542,10 +546,10 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
                 refseq->index, refseq->length, refseq->header, refseq->string);
 
         //Construct the MetaSequence 
-        starttime = time(NULL);
+        startTime = time(NULL);
         MetaSequence *metaSequence = constructReferenceMetaSequence(end,
                 cactusDisk, refseq, event);
-        st_logInfo("constructReferenceMetatSequence:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("constructReferenceMetatSequence:\t%d seconds\n", time(NULL) - startTime);
         /*st_logInfo(
                 "Got metasequence: name *%s*, start %d, length %d, header *%s*, event %s\n",
                 cactusMisc_nameToString(metaSequence_getName(metaSequence)),
@@ -556,46 +560,41 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         */
 
         //st_logInfo("\nConstructing reference sequence...\n");
-        starttime = time(NULL);
+        startTime = time(NULL);
         constructReferenceSequence(metaSequence, flower);
-        st_logInfo("constructReferenceSequence:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("constructReferenceSequence:\t%d seconds\n", time(NULL) - startTime);
         //st_logInfo("Constructed reference sequence successfully.\n");
 
         //Add startStub (3' end)
-        starttime = time(NULL);
+        startTime = time(NULL);
         Sequence *sequence = getSequenceByHeader(flower, refseq->header);
-        st_logInfo("getSequenceByHeader:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("getSequenceByHeader:\t%d seconds\n", time(NULL) - startTime);
 
-        starttime = time(NULL);
+        startTime = time(NULL);
         Cap *startcap = cap_construct2(end, refseq->index, true, sequence);
-        st_logInfo("cap_construct2:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("cap_construct2:\t%d seconds\n", time(NULL) - startTime);
         //Cap *startcap = cap_construct(end, event);
 
-        starttime = time(NULL);
+        startTime = time(NULL);
         cap_check(startcap);
-        st_logInfo("cap_check:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("cap_check:\t%d seconds\n", time(NULL) - startTime);
         refseq->index++;
 
-        starttime = time(NULL);
+        startTime = time(NULL);
         copyRefCapToLowerFlowers(startcap);
-        st_logInfo("copyRefCapToLowerFlowers:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("copyRefCapToLowerFlowers:\t%d seconds\n", time(NULL) - startTime);
 
         //adding reference Segments to the blocks and creating inherited caps
         //st_logInfo("Adding reference segments and adjacencies...\n");
-        starttime = time(NULL);
+        startTime = time(NULL);
         reference_walkDown(end, refseq, NULL);
-        st_logInfo("reference_walkDown:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("reference_walkDown:\t%d seconds\n", time(NULL) - startTime);
         //st_logInfo("Added reference segments and adjacencies successfully.\n");
 
-        //write to Disk:
-        starttime = time(NULL);
-        cactusDisk_write(cactusDisk);
-        st_logInfo("cactusDisk_write:\t%d seconds\n", time(NULL) - starttime);
-
         //free memory:
-        starttime = time(NULL);
+        startTime = time(NULL);
         referenceSequence_destruct(refseq);
-        st_logInfo("referenceSequence_destruct:\t%d seconds\n", time(NULL) - starttime);
+        st_logInfo("referenceSequence_destruct:\t%d seconds\n", time(NULL) - startTime);
         free(chromHeader);
     }
     reference_destructPseudoChromosomeIterator(it);
@@ -753,6 +752,15 @@ int main(int argc, char *argv[]) {
 
     checkAddedReferenceSequence(flower, name);
     flower_checkRecursive(flower);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Update the disk
+    ///////////////////////////////////////////////////////////////////////////
+
+    //write to Disk:
+    startTime = time(NULL);
+    cactusDisk_write(cactusDisk);
+    st_logInfo("cactusDisk_write:\t%d seconds\n", time(NULL) - startTime);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.
