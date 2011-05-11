@@ -110,14 +110,14 @@ char *formatSequenceHeader1(Sequence *sequence) {
 }
 
 char *getConsensusString(Block *block) {
-    //st_logInfo("\nGetting consensus string...:\n");
+    //st_logInfo("\nGetting consensus string, blockOrientation: %d...:\n", block_getOrientation(block));
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     Segment *segment;
     struct List *list = constructEmptyList(0, free);
     while ((segment = block_getNext(it)) != NULL) {
         if (segment_getSequence(segment) != NULL) {
             listAppend(list, segment_getString(segment));
-            //st_logInfo("%s\n", segment_getString(segment));
+            //st_logInfo("%s\t%d\t%s\n", event_getHeader(segment_getEvent(segment)), segment_getStrand(segment), segment_getString(segment));
         }
     }
     block_destructInstanceIterator(it);
@@ -156,7 +156,7 @@ char *getConsensusString(Block *block) {
         }
         //st_logInfo("\n");
     }
-    //st_logInfo("ConsensusStr: %s\n", consensusStr);
+    //st_logInfo("ConsensusStr: %s\n\n", consensusStr);
 
     return consensusStr;
 }
@@ -229,18 +229,42 @@ Segment *addReferenceSegmentToBlock(End *end, ReferenceSequence *refseq) {
     Segment *segment = segment_construct2(block, refseq->index, strand, sequence);
     refseq->index += block_getLength(block);
 
+    /*//DEBUG
+    Block_InstanceIterator *it = block_getInstanceIterator(block);
+    Segment *sm;
+    st_logInfo("\nBLOCK (segment added with strand %d)\n", strand);
+    while ((sm = block_getNext(it)) != NULL) {
+        if (segment_getSequence(segment) != NULL) {
+            st_logInfo("%s\t%d\t%s\n", event_getHeader(segment_getEvent(sm)), segment_getStrand(sm), segment_getString(sm));
+        }
+    }
+    block_destructInstanceIterator(it);
+    //END DEBUG 
+    */
+
     //Adding adj
     addAdj(end, pseudoAdjEnd, refseq->header);
     
     return segment;
 }
 
-void block_metaSequence(End *end, ReferenceSequence *refseq) {
+bool block_metaSequence(End *end, ReferenceSequence *refseq, bool prevStrand) {
     /*
      *Adding sequence of end's block to MetaSequence
      */
     End *pseudoAdjEnd = getPseudoAdjacentEnd(end);
-    Block *block = end_getSide(end) != end_getSide(pseudoAdjEnd) ? end_getBlock(end) : end_getBlock(end_getReverse(end));
+    bool strand = end_getSide(end) != end_getSide(pseudoAdjEnd) ? prevStrand : (!prevStrand) ;
+
+    /*fprintf(stdout, "PrevOrientation: %d, currOrientation: %d\n", end_getOrientation(pseudoAdjEnd), end_getOrientation(end));
+    
+    if(end_isBlockEnd(pseudoAdjEnd) && end_isBlockEnd(end)){
+    fprintf(stdout, "PrevOtherEnd: %s - PrevEnd: %s; CurrEnd: %s - currOtherEnd: %s\n", cactusMisc_nameToString(end_getName(end_getOtherBlockEnd(pseudoAdjEnd))), 
+                      cactusMisc_nameToString(end_getName(pseudoAdjEnd)), cactusMisc_nameToString(end_getName(end)), cactusMisc_nameToString(end_getName(end_getOtherBlockEnd(end))) );
+    }
+    fprintf(stdout, "PrevSide: %d, currSide: %d; PrevStrand %d, CurrStrand: %d\n", end_getSide(pseudoAdjEnd), end_getSide(end),  prevStrand, strand);
+    */
+    Block *block = strand ? end_getBlock(end) : end_getBlock(end_getReverse(end));
+    //Block *block = end_getSide(end) != end_getSide(pseudoAdjEnd) ? end_getBlock(end) : end_getBlock(end_getReverse(end));
     //Block *block = end_getBlock(end);
     if (block_getInstanceNumber(block) > 0) {
         char *instanceString = getConsensusString(block);
@@ -250,6 +274,7 @@ void block_metaSequence(End *end, ReferenceSequence *refseq) {
         assert(block_getLength(block) == 1);
         refseq->string = strcat(refseq->string, "N");
     }
+    return strand;
 }
 
 Cap *copyRefCapToLowerFlowers(Cap *cap) {
@@ -280,9 +305,9 @@ void addStubAdjacency(End *end, char *header){
     return;
 }
 
-void reference_walkDown(End *end, ReferenceSequence *refseq);
+void reference_walkDown(End *end, ReferenceSequence *refseq, struct IntList *prevStrands);
 
-void reference_walkUp(End *end, ReferenceSequence *refseq) {
+void reference_walkUp(End *end, ReferenceSequence *refseq, struct IntList *prevStrands) {
     assert(end != NULL);
     if (end_isBlockEnd(end)) {
         if (strlen(refseq->string) == refseq->length) {
@@ -293,9 +318,10 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
             copyRefCapToLowerFlowers(segment_get3Cap(segment));
             //}
         } else {
-            block_metaSequence(end, refseq);
+            bool prevStrand = prevStrands->list[prevStrands->length -1];
+            prevStrands->list[prevStrands->length - 1] = block_metaSequence(end, refseq, prevStrand);
         }
-        reference_walkDown(end_getOtherBlockEnd(end), refseq);
+        reference_walkDown(end_getOtherBlockEnd(end), refseq, prevStrands);
     } else {
         assert(end_isAttached(end));
         Group *parentGroup = flower_getParentGroup(end_getFlower(end));
@@ -304,7 +330,11 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
             if (end_getSide(parentEnd) != end_getSide(end)){
                 parentEnd = end_getReverse(parentEnd);
             }
-            reference_walkUp(parentEnd, refseq);
+            if( prevStrands ){
+                prevStrands->length -= 1;
+                //listRemove(prevStrands, prevStrands->list[prevStrands->length - 1]);
+            }
+            reference_walkUp(parentEnd, refseq, prevStrands);
             if(refseq->index > 0){
                 addAdj(end, getPseudoAdjacentEnd(end), refseq->header);
             }
@@ -330,20 +360,25 @@ void reference_walkUp(End *end, ReferenceSequence *refseq) {
     }
 }
 
-void reference_walkDown(End *end, ReferenceSequence *refseq) {
+void reference_walkDown(End *end, ReferenceSequence *refseq, struct IntList *prevStrands) {
     assert(end != NULL);
     //assert(end_isAttached(end));
     Group *group = end_getGroup(end);
     if (group_isLeaf(group)) { //Walk across
         end = getPseudoAdjacentEnd(end);
         //Now walk up
-        reference_walkUp(end, refseq);
+        reference_walkUp(end, refseq, prevStrands);
     } else { //Walk down
         End *inheritedEnd = flower_getEnd(group_getNestedFlower(group), end_getName(end));
         if (end_getSide(end) != end_getSide(inheritedEnd)){
             inheritedEnd = end_getReverse(inheritedEnd);
         }
-        reference_walkDown(inheritedEnd, refseq);
+
+        if(prevStrands){
+            bool strand = prevStrands->list[prevStrands->length -1];
+            intListAppend(prevStrands, strand);
+        }
+        reference_walkDown(inheritedEnd, refseq, prevStrands);
     }
 }
 
@@ -357,7 +392,12 @@ MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
     MetaSequence *metaSequence;
     int32_t start = 1;
 
-    reference_walkDown(end, refseq);
+    struct IntList * strands = constructEmptyIntList(0);
+    bool firststrand = true;
+    intListAppend(strands, firststrand);
+    reference_walkDown(end, refseq, strands);
+    destructIntList(strands);
+    
     assert(strlen(refseq->string) == refseq->length);
     metaSequence = metaSequence_construct(start, strlen(refseq->string),
             refseq->string, refseq->header, eventName, cactusDisk);
@@ -454,19 +494,31 @@ Event *addReferenceEvent(Flower *flower, char *header){
  */
 Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         char *header) {
+    int64_t starttime = time(NULL);
     //Return if event with 'header' has already existed. Otherwise, add event 'header'
     EventTree *eventTree = flower_getEventTree(flower);
+    st_logInfo("flower_getEventTree:\t%d seconds\n", time(NULL) - starttime);
+
     Event *event;
+
+    starttime = time(NULL);
     event = eventTree_getEventByHeader(eventTree, header);
+    st_logInfo("eventTree_getEventByHeader:\t%d seconds\n", time(NULL) - starttime);
+
     if(event) {
         return flower;
     }else{
+        starttime = time(NULL);
         event = addReferenceEvent(flower, header);
+        st_logInfo("addReferenceEvent:\t%d seconds\n", time(NULL) - starttime);
         //event = eventTree_getEventByHeader(eventTree, header);
         assert(event != NULL);
     }
 
+    starttime = time(NULL);
     Reference *reference = flower_getReference(flower);
+    st_logInfo("flower_getReference:\t%d seconds\n", time(NULL) - starttime);
+    
     assert(reference != NULL);
     Reference_PseudoChromosomeIterator *it =
             reference_getPseudoChromosomeIterator(reference);
@@ -490,39 +542,60 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
                 refseq->index, refseq->length, refseq->header, refseq->string);
 
         //Construct the MetaSequence 
+        starttime = time(NULL);
         MetaSequence *metaSequence = constructReferenceMetaSequence(end,
                 cactusDisk, refseq, event);
-        st_logInfo(
+        st_logInfo("constructReferenceMetatSequence:\t%d seconds\n", time(NULL) - starttime);
+        /*st_logInfo(
                 "Got metasequence: name *%s*, start %d, length %d, header *%s*, event %s\n",
                 cactusMisc_nameToString(metaSequence_getName(metaSequence)),
                 metaSequence_getStart(metaSequence),
                 metaSequence_getLength(metaSequence),
                 metaSequence_getHeader(metaSequence),
                 event_getHeader(eventTree_getEvent(eventTree, metaSequence_getEventName(metaSequence))));
+        */
 
-        st_logInfo("\nConstructing reference sequence...\n");
+        //st_logInfo("\nConstructing reference sequence...\n");
+        starttime = time(NULL);
         constructReferenceSequence(metaSequence, flower);
-        st_logInfo("Constructed reference sequence successfully.\n");
+        st_logInfo("constructReferenceSequence:\t%d seconds\n", time(NULL) - starttime);
+        //st_logInfo("Constructed reference sequence successfully.\n");
 
         //Add startStub (3' end)
+        starttime = time(NULL);
         Sequence *sequence = getSequenceByHeader(flower, refseq->header);
+        st_logInfo("getSequenceByHeader:\t%d seconds\n", time(NULL) - starttime);
+
+        starttime = time(NULL);
         Cap *startcap = cap_construct2(end, refseq->index, true, sequence);
+        st_logInfo("cap_construct2:\t%d seconds\n", time(NULL) - starttime);
         //Cap *startcap = cap_construct(end, event);
 
+        starttime = time(NULL);
         cap_check(startcap);
+        st_logInfo("cap_check:\t%d seconds\n", time(NULL) - starttime);
         refseq->index++;
+
+        starttime = time(NULL);
         copyRefCapToLowerFlowers(startcap);
+        st_logInfo("copyRefCapToLowerFlowers:\t%d seconds\n", time(NULL) - starttime);
 
         //adding reference Segments to the blocks and creating inherited caps
-        st_logInfo("Adding reference segments and adjacencies...\n");
-        reference_walkDown(end, refseq);
-        st_logInfo("Added reference segments and adjacencies successfully.\n");
+        //st_logInfo("Adding reference segments and adjacencies...\n");
+        starttime = time(NULL);
+        reference_walkDown(end, refseq, NULL);
+        st_logInfo("reference_walkDown:\t%d seconds\n", time(NULL) - starttime);
+        //st_logInfo("Added reference segments and adjacencies successfully.\n");
 
         //write to Disk:
+        starttime = time(NULL);
         cactusDisk_write(cactusDisk);
+        st_logInfo("cactusDisk_write:\t%d seconds\n", time(NULL) - starttime);
 
         //free memory:
+        starttime = time(NULL);
         referenceSequence_destruct(refseq);
+        st_logInfo("referenceSequence_destruct:\t%d seconds\n", time(NULL) - starttime);
         free(chromHeader);
     }
     reference_destructPseudoChromosomeIterator(it);
@@ -649,6 +722,7 @@ int main(int argc, char *argv[]) {
 
     stKVDatabaseConf *kvDatabaseConf = stKVDatabaseConf_constructFromString(
             cactusDiskDatabaseString);
+    
     CactusDisk *cactusDisk = cactusDisk_construct(kvDatabaseConf, 0);
     st_logInfo("Set up the flower disk\n");
 
@@ -656,8 +730,10 @@ int main(int argc, char *argv[]) {
     // Parse the basic reconstruction problem
     ///////////////////////////////////////////////////////////////////////////
 
+    int64_t starttime = time(NULL);
     Flower *flower = cactusDisk_getFlower(cactusDisk,
             cactusMisc_stringToName(flowerName));
+    st_logInfo("cactusDisk_getFlower:\t%d seconds\n", time(NULL) - starttime);
     st_logInfo("Parsed the top level flower of the cactus tree to check\n");
 
     ///////////////////////////////////////////////////////////////////////////
