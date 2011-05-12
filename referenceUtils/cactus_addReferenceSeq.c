@@ -549,7 +549,7 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         startTime = time(NULL);
         MetaSequence *metaSequence = constructReferenceMetaSequence(end,
                 cactusDisk, refseq, event);
-        st_logInfo("constructReferenceMetatSequence:\t%d seconds\n", time(NULL) - startTime);
+        st_logInfo("constructReferenceMetaSequence:\t%d seconds\n", time(NULL) - startTime);
         /*st_logInfo(
                 "Got metasequence: name *%s*, start %d, length %d, header *%s*, event %s\n",
                 cactusMisc_nameToString(metaSequence_getName(metaSequence)),
@@ -768,6 +768,13 @@ int main(int argc, char *argv[]) {
 
     cactusDisk_destruct(cactusDisk);
     stKVDatabaseConf_destruct(kvDatabaseConf);
+    free(name);
+    if(logLevelString != NULL) {
+        free(logLevelString);
+    }
+    free(cactusDiskDatabaseString);
+
+    //while(1);
 
     return 0;
 }
