@@ -93,7 +93,7 @@ class RunRegion(Target):
         #Now ready to runCactus:
         batchSystem = "singleMachine"
         jobTree = os.path.join(localTempDir, "jobTree")
-        cactusCommand = "cactus_workflow.py --batchSystem %s --experiment %s --buildReference --setupAndBuildAlignments --logDebug --jobTree %s" \
+        cactusCommand = "cactus_workflow.py --stats --batchSystem %s --experiment %s --buildReference --setupAndBuildAlignments --logDebug --jobTree %s" \
                         %(batchSystem, experimentFile, jobTree)
         logger.info("Going to run cactus now, the command is %s" %cactusCommand)
         system("%s" %cactusCommand)
@@ -308,7 +308,7 @@ def main():
         raise RuntimeError("The jobTree contains %d failed jobs\n" %i)
 
 if __name__ == "__main__":
-    from cactus.utilities.genemap.cactus_runGenemap import *    
+    from cactusTools.genemap.cactus_runGenemap import *    
     main()
 
 
