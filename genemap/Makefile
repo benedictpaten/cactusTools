@@ -1,7 +1,7 @@
 rootPath = ../
 include ../include.mk
 
-progs = $(notdir $(wildcard  genemapCactusVsMultiz.py genemapChain.py genemapMerge.py genemapMakeLatexTab.py cactus_runGenemap.py))
+progs = $(notdir $(wildcard  genemapCactusVsMultiz.py genemapChain.py genemapMerge.py genemapMakeLatexTab.py cactus_runGenemap.py cactus_writeExperimentXml.py))
 
 targets = ${progs:%=${binPath}/%}
 
