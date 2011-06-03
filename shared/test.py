@@ -65,7 +65,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
     logger.info("Using the output dir: %s" % outputDir)
     
     experiment = cactus.shared.test.runWorkflow_TestScript(sequences, newickTreeString, 
-                           outputDir=outputDir,
+                           outputDir=outputDir, 
                            batchSystem=batchSystem,
                            buildTrees=buildTrees, buildFaces=buildFaces, buildReference=buildReference,
                            configFile=configFile,
@@ -124,9 +124,8 @@ def runWorkflow_TestScript(sequences, newickTreeString,
         logger.info("Not building the MAFs")
         
     #Now remove everything we generate
-    system("rm -rf %s" % tempDir)
-    #Return the experiment, so that the caller can decide what todo with the output
     experiment.cleanupDatabase()
+    system("rm -rf %s" % tempDir)    
         
 def runWorkflow_multipleExamples(inputGenFunction,
                                  testNumber=1, 
