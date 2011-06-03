@@ -43,8 +43,6 @@ from cactus.shared.config import CactusWorkflowExperiment
 import cactus.shared.test
 
 def runWorkflow_TestScript(sequences, newickTreeString, 
-                           outputDir=None, 
-                           databaseName=None,
                            batchSystem="single_machine",
                            buildTrees=True, buildFaces=True, buildReference=True,
                            buildReferenceSequence=False,
@@ -63,13 +61,11 @@ def runWorkflow_TestScript(sequences, newickTreeString,
     logger.info("Using the temp dir: %s" % tempDir)
         
     #Setup the output dir
-    if outputDir == None: 
-        outputDir = getTempDirectory(tempDir)
+    outputDir = getTempDirectory(tempDir)
     logger.info("Using the output dir: %s" % outputDir)
     
     experiment = cactus.shared.test.runWorkflow_TestScript(sequences, newickTreeString, 
                            outputDir=outputDir, 
-                           databaseName=databaseName,
                            batchSystem=batchSystem,
                            buildTrees=buildTrees, buildFaces=buildFaces, buildReference=buildReference,
                            configFile=configFile,
@@ -128,10 +124,8 @@ def runWorkflow_TestScript(sequences, newickTreeString,
         logger.info("Not building the MAFs")
         
     #Now remove everything we generate
+    experiment.cleanupDatabase()
     system("rm -rf %s" % tempDir)    
-    
-    #Return the experiment, so that the caller can decide what todo with the output
-    return experiment
         
 def runWorkflow_multipleExamples(inputGenFunction,
                                  testNumber=1, 
@@ -153,26 +147,14 @@ def runWorkflow_multipleExamples(inputGenFunction,
         for test in xrange(testNumber): 
             tempDir = getTempDirectory(os.getcwd())
             sequences, newickTreeString = inputGenFunction(regionNumber=test, tempDir=tempDir)
-            if outputDir != None:
-                out = os.path.join(outputDir, str(test))
-                if os.path.exists(out):
-                    system("rm -rf %s" % out)
-                os.mkdir(out)
-                os.chmod(out, 0777) #Ensure everyone has access to the file.
-                databaseName = "cactusDisk_%s" % str(test)
-            else:
-                out = None
-                databaseName = None
-            experiment = runWorkflow_TestScript(sequences, newickTreeString,
-                                   outputDir=out, databaseName=databaseName, batchSystem=batchSystem,
+            runWorkflow_TestScript(sequences, newickTreeString,
+                                   batchSystem=batchSystem,
                                    buildTrees=buildTrees, buildFaces=buildFaces, buildReference=buildReference, 
                                    buildReferenceSequence=buildReferenceSequence,
                                    buildCactusPDF=buildCactusPDF, buildAdjacencyPDF=buildAdjacencyPDF,
                                    buildReferencePDF=buildReferencePDF,
                                    makeCactusTreeStats=makeCactusTreeStats, makeMAFs=makeMAFs, configFile=configFile,
                                    buildJobTreeStats=buildJobTreeStats)
-            if outputDir == None:
-                experiment.cleanupDatabase()
             system("rm -rf %s" % tempDir)
             logger.info("Finished random test %i" % test)
     
