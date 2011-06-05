@@ -408,13 +408,18 @@ MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
     return metaSequence;
 }
 
-void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower) {
+void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower, Name name) {
     /*
      *Attach MetaSequence to cactus flowers
      */
     assert(flower != NULL);
+    Reference *ref = flower_getReference(flower);
+
     //add reference sequence to current flower
-    sequence_construct(metaSequence, flower);
+    PseudoChromosome *pc = reference_getPseudoChromosome(ref, name);
+    if( pc != NULL ){
+        sequence_construct(metaSequence, flower);
+    }
 
     //recursively add reference sequence to lower-level flowers
     Flower_GroupIterator *it = flower_getGroupIterator(flower);
@@ -422,7 +427,7 @@ void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower) {
     while ((group = flower_getNextGroup(it)) != NULL) {
         Flower *nestedFlower = group_getNestedFlower(group);
         if (nestedFlower != NULL) {
-            constructReferenceSequence(metaSequence, nestedFlower);
+            constructReferenceSequence(metaSequence, nestedFlower, name);
         }
     }
     flower_destructGroupIterator(it);
@@ -561,7 +566,7 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
 
         //st_logInfo("\nConstructing reference sequence...\n");
         startTime = time(NULL);
-        constructReferenceSequence(metaSequence, flower);
+        constructReferenceSequence(metaSequence, flower, pseudoChromosome_getName(pseudoChromosome) );
         st_logInfo("constructReferenceSequence:\t%d seconds\n", time(NULL) - startTime);
         //st_logInfo("Constructed reference sequence successfully.\n");
 
