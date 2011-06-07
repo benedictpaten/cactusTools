@@ -14,6 +14,14 @@ from sonLib.bioio import getTempFile
 from sonLib.bioio import getTempDirectory
 from sonLib.bioio import system
 from sonLib.bioio import nameValue
+from sonLib.bioio import getLogLevelString
+
+def getLogLevelString2(logLevelString):
+    """Gets the log level string for the binary
+    """
+    if logLevelString == None:
+        return getLogLevelString()
+    return logLevelString
     
 #############################################
 #############################################
@@ -21,8 +29,9 @@ from sonLib.bioio import nameValue
 #############################################
 #############################################    
     
-def runCactusTreeStats(outputFile, cactusDiskDatabaseString, flowerName='0'):
-    command = "cactus_treeStats --cactusDisk '%s' --flowerName %s --outputFile %s" % (cactusDiskDatabaseString, flowerName, outputFile)
+def runCactusTreeStats(outputFile, cactusDiskDatabaseString, flowerName='0', logLevel=None):
+    logLevel = getLogLevelString2(logLevel)
+    command = "cactus_treeStats --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s" % (cactusDiskDatabaseString, flowerName, outputFile, logLevel)
     system(command)
     logger.info("Ran the cactus tree stats command apprently okay")
 
@@ -36,14 +45,16 @@ def runCactusTreeStatsToLatexTables(inputFiles, regionNames, outputFile):
 def runCactusTreeViewer(graphFile,
                         cactusDiskDatabaseString, 
                         flowerName="0", 
-                        logLevel="DEBUG"):
+                        logLevel=None):
+    logLevel = getLogLevelString2(logLevel)
     system("cactus_treeViewer --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s" \
                     % (cactusDiskDatabaseString, flowerName, graphFile, logLevel))
     logger.info("Created a cactus tree graph")
     
 def runCactusAdjacencyGraphViewer(graphFile,
                              cactusDiskDatabaseString, flowerName="0",
-                             logLevel="DEBUG", includeInternalAdjacencies=False):
+                             logLevel=None, includeInternalAdjacencies=False):
+    logLevel = getLogLevelString2(logLevel)
     includeInternalAdjacencies = nameValue("includeInternalAdjacencies", includeInternalAdjacencies, bool)
     system("cactus_adjacencyGraphViewer --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s" \
                     % (cactusDiskDatabaseString, flowerName, graphFile, logLevel))
@@ -51,13 +62,15 @@ def runCactusAdjacencyGraphViewer(graphFile,
     
 def runCactusReferenceGraphViewer(graphFile,
                                   cactusDiskDatabaseString, flowerName="0",
-                                  logLevel="DEBUG"):
+                                  logLevel=None):
+    logLevel = getLogLevelString2(logLevel)
     system("cactus_referenceViewer --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s" \
                     % (cactusDiskDatabaseString, flowerName, graphFile, logLevel))
     logger.info("Created a cactus reference graph")
     
 def runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, flowerName="0",
-                          logLevel="DEBUG", orderByReference=False, referenceSequenceName=None):
+                          logLevel=None, orderByReference=False, referenceSequenceName=None):
+    logLevel = getLogLevelString2(logLevel)
     orderByReference = nameValue("orderByReference", orderByReference, bool)
     referenceSequence = nameValue("referenceSequence", referenceSequenceName, str)
     system("cactus_MAFGenerator --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s %s %s" \
@@ -65,5 +78,6 @@ def runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, flowerName="0",
     logger.info("Created a MAF for the given cactusDisk")
     
 def runCactusAddReferenceSequence(cactusDiskDatabaseString, flowerName="0",
-                          logLevel="DEBUG", referenceEventString="reference"):
+                          logLevel=None, referenceEventString="reference"):
+    logLevel = getLogLevelString2(logLevel)
     system("cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --referenceEventString %s" % (cactusDiskDatabaseString, logLevel, referenceEventString))
