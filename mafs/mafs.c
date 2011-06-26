@@ -137,7 +137,7 @@ void prepMafBlock(stList *caps, FILE *fileHandle) {
     getMAFBlock(segment_getBlock(cap_getSegment(cap)), fileHandle);
 }
 
-void getMAFsReferenceOrdered(const char *referenceEventString, Flower *flower,
+void getMAFsReferenceOrdered2(const char *referenceEventString, Flower *flower,
         FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *)) {
     /*
      * Outputs MAF representations of all the block in the flower and its descendants, ordered
@@ -158,6 +158,11 @@ void getMAFsReferenceOrdered(const char *referenceEventString, Flower *flower,
         }
     }
     flower_destructEndIterator(endIt);
+}
+
+void getMAFsReferenceOrdered(Flower *flower,
+        FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *)) {
+    getMAFsReferenceOrdered2(cactusMisc_getDefaultReferenceEventHeader(), flower, fileHandle, getMafBlockFn);
 }
 
 void getMAFs(Flower *flower, FILE *fileHandle,

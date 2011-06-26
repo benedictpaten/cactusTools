@@ -702,6 +702,9 @@ void reportReferenceStats(Flower *flower, const char *referenceEventString,
      */
     Event *referenceEvent = eventTree_getEventByHeader(
             flower_getEventTree(flower), referenceEventString);
+    if(referenceEvent == NULL) {
+        st_logDebug("No reference event found, so no reporting reference stats\n");
+    }
 
     stList *adjacencyWeights = stList_construct3(0,
             (void(*)(void *)) stIntTuple_destruct);
@@ -780,9 +783,7 @@ void reportCactusDiskStats(char *cactusDiskName, Flower *flower, const char *ref
     /*
      * Stats on the reference in the reconstruction..
      */
-    if(referenceEventString != NULL) {
-        reportReferenceStats(flower, referenceEventString, fileHandle);
-    }
+     reportReferenceStats(flower, referenceEventString, fileHandle);
 
     printClosingTag("stats", fileHandle);
 }

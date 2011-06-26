@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     char * flowerName = "0";
     char * outputFile = NULL;
     bool perColumnStats = 1;
-    char * referenceEventString = NULL;
+    char *referenceEventString = (char *)cactusMisc_getDefaultReferenceEventHeader();
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.

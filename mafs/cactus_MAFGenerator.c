@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     char * cactusDiskDatabaseString = NULL;
     char * flowerName = NULL;
     char * outputFile = NULL;
-    char * referenceEventString = NULL;
+    char *referenceEventString = (char *)cactusMisc_getDefaultReferenceEventHeader();
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -134,16 +134,14 @@ int main(int argc, char *argv[]) {
     int64_t startTime = time(NULL);
     FILE *fileHandle = fopen(outputFile, "w");
     makeMAFHeader(flower, fileHandle);
-    if(referenceEventString && getSequenceMatchesHeader(flower, referenceEventString) == NULL) {
-        fprintf(stderr, "No reference sequence found in cactusDisk\n");
-        exit(EXIT_FAILURE);
-        //flower = flower_addReferenceSequence(flower, cactusDisk, referenceSequence);
-    }
-    if (referenceEventString != NULL) {
-        st_logInfo("Ordering by reference by string %s\n", referenceEventString);
-        getMAFsReferenceOrdered(referenceEventString, flower, fileHandle, getMAFBlock);
-    } else {
+
+    if(eventTree_getEventByHeader(flower_getEventTree(flower), referenceEventString) == NULL) {
+        st_logInfo("No reference event found, so not ordering by reference\n", referenceEventString);
         getMAFs(flower, fileHandle, getMAFBlock);
+    }
+    else {
+        st_logInfo("Ordering by reference by string %s\n", referenceEventString);
+        getMAFsReferenceOrdered2(referenceEventString, flower, fileHandle, getMAFBlock);
     }
     fclose(fileHandle);
     st_logInfo("Got the mafs in %i seconds/\n", time(NULL) - startTime);
