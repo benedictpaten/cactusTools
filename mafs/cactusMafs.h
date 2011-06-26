@@ -10,7 +10,8 @@
 
 void getMAFBlock(Block *block, FILE *fileHandle);
 
-void getMAFsReferenceOrdered(Flower *flower, FILE *fileHandle, void (*getMafBlock)(Block *, FILE *));
+void getMAFsReferenceOrdered(const char *referenceEventName, Flower *flower,
+        FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *));
 
 void getMAFs(Flower *flower, FILE *fileHandle, void (*getMafBlock)(Block *, FILE *));
 

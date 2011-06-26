@@ -17,8 +17,8 @@
 /*
  * Writes a lot of stats.
  */
-void reportCactusDiskStats(char *cactusDiskName, Flower *flower, FILE *fileHandle, bool perColumnStats, stSortedSet *includeSpecies, stSortedSet *excludeSpecies);
-
+void reportCactusDiskStats(char *cactusDiskName, Flower *flower, const char *referenceEventString,
+        FILE *fileHandle, bool perColumnStats);
 /*
  * Writes stats about blocks, including only those blocks for which include block is true.
  */

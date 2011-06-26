@@ -12,10 +12,10 @@ ${binPath}/%: %
 	cp -f $< $@
 	chmod 775 $@
 
-${binPath}/cactus_MAFGenerator : cactus_MAFGenerator.c mafs.c ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_MAFGenerator cactus_MAFGenerator.c mafs.c ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_MAFGenerator : *.c *.h ${cactusLibPath}/cactusReference.a ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_MAFGenerator cactus_MAFGenerator.c mafs.c ${cactusLibPath}/cactusReference.a ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
-${binPath}/cactus_augmentedMaf : ${libPath}/cactusUtils.h ${libPath}/cactusUtils.a cactus_augmentedMaf.c ${basicLibsDependencies}
+${binPath}/cactus_augmentedMaf :  *.c *.h ${libPath}/cactusUtils.h ${libPath}/cactusUtils.a cactus_augmentedMaf.c ${basicLibsDependencies}
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_augmentedMaf cactus_augmentedMaf.c ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 clean :
@@ -24,7 +24,7 @@ clean :
 	rm -rf ${progs:%=${binPath}/%}
 	rm -rf ${libPath}/cactusMafs.h 
 	
-${libPath}/cactusMafs.a : mafs.c cactusMafs.h ${basicLibsDependencies}
+${libPath}/cactusMafs.a :  *.c *.h  ${basicLibsDependencies}
 	${cxx} ${cflags} -I ${libPath}/ -c mafs.c
 	ar rc cactusMafs.a *.o 
 	ranlib cactusMafs.a 
