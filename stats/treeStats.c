@@ -692,7 +692,7 @@ void reportReferenceStatsP(stList *caps, stList *adjacencyWeights) {
     }
     end_destructInstanceIterator(instanceIt);
     assert(i > 0);
-    stList_append(adjacencyWeights, stIntTuple_construct(1, i));
+    stList_append(adjacencyWeights, stIntTuple_construct(1, i-1));
 }
 
 void reportReferenceStats(Flower *flower, const char *referenceEventString,
@@ -700,10 +700,12 @@ void reportReferenceStats(Flower *flower, const char *referenceEventString,
     /*
      * Prints the reference stats to the XML file.
      */
+    assert(referenceEventString != NULL);
     Event *referenceEvent = eventTree_getEventByHeader(
             flower_getEventTree(flower), referenceEventString);
     if(referenceEvent == NULL) {
-        st_logDebug("No reference event found, so no reporting reference stats\n");
+        st_logDebug("No reference event found for reference string %s, so no reporting reference stats\n", referenceEventString);
+        return;
     }
 
     stList *adjacencyWeights = stList_construct3(0,

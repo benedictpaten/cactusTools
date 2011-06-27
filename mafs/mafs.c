@@ -130,11 +130,14 @@ void getMAFBlock(Block *block, FILE *fileHandle) {
     }
 }
 
+void(*prepMafBlockFn)(Block *, FILE *);
+
 void prepMafBlock(stList *caps, FILE *fileHandle) {
     Cap *cap = stList_get(caps, 0);
     assert(cap_getSide(cap));
-    assert(cap_getSegment(cap) != NULL);
-    getMAFBlock(segment_getBlock(cap_getSegment(cap)), fileHandle);
+    if(cap_getSegment(cap)) {
+        prepMafBlockFn(segment_getBlock(cap_getSegment(cap)), fileHandle);
+    }
 }
 
 void getMAFsReferenceOrdered2(const char *referenceEventString, Flower *flower,
@@ -146,6 +149,7 @@ void getMAFsReferenceOrdered2(const char *referenceEventString, Flower *flower,
     Event *referenceEvent = eventTree_getEventByHeader(flower_getEventTree(flower), referenceEventString);
     End *end;
     Flower_EndIterator *endIt = flower_getEndIterator(flower);
+    prepMafBlockFn = getMafBlockFn;
     while ((end = flower_getNextEnd(endIt)) != NULL) {
         if (end_isStubEnd(end) && end_isAttached(end)) {
             Cap *cap = getCapForReferenceEvent(end, event_getName(referenceEvent)); //The cap in the reference
@@ -175,7 +179,7 @@ void getMAFs(Flower *flower, FILE *fileHandle,
     Flower_BlockIterator *blockIterator = flower_getBlockIterator(flower);
     Block *block;
     while ((block = flower_getNextBlock(blockIterator)) != NULL) {
-        getMAFBlock(block, fileHandle);
+        getMafBlock(block, fileHandle);
         //getMAFBlock(block, fileHandle, NULL);
     }
     flower_destructBlockIterator(blockIterator);

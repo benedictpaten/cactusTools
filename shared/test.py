@@ -25,11 +25,9 @@ from sonLib.bioio import runGraphViz
 
 from cactusTools.shared.common import runCactusTreeViewer
 from cactusTools.shared.common import runCactusAdjacencyGraphViewer
-from cactusTools.shared.common import runCactusReferenceGraphViewer 
 from cactusTools.shared.common import runCactusTreeStats
 from cactusTools.shared.common import runCactusMAFGenerator
 from cactusTools.shared.common import runCactusTreeStatsToLatexTables
-from cactusTools.shared.common import runCactusAddReferenceSequence
 
 from sonLib.bioio import TestStatus
 
@@ -45,10 +43,8 @@ import cactus.shared.test
 def runWorkflow_TestScript(sequences, newickTreeString, 
                            batchSystem="single_machine",
                            buildTrees=True, buildFaces=True, buildReference=True,
-                           buildReferenceSequence=False,
                            buildCactusPDF=False,
                            buildAdjacencyPDF=False,
-                           buildReferencePDF=False,
                            makeCactusTreeStats=False, 
                            makeMAFs=False, 
                            configFile=None,
@@ -72,10 +68,6 @@ def runWorkflow_TestScript(sequences, newickTreeString,
                            buildJobTreeStats=buildJobTreeStats)
     cactusDiskDatabaseString = experiment.getDatabaseString()
     
-    if buildReferenceSequence:
-        runCactusAddReferenceSequence(cactusDiskDatabaseString)
-        logger.info("Ran add reference sequence to the maf")
-    
     #Run the cactus tree graph-viz plot
     if buildCactusPDF:
         cactusTreeDotFile = os.path.join(outputDir, "cactusTree.dot")
@@ -96,16 +88,6 @@ def runWorkflow_TestScript(sequences, newickTreeString,
     else:
         logger.info("Not building a adjacency graph plot")
     
-    #Run the cactus tree graph-viz plot
-    if buildReferencePDF:
-        referenceGraphDotFile = os.path.join(outputDir, "referenceGraph.dot")
-        referenceGraphPDFFile = os.path.join(outputDir, "referenceGraph.pdf")
-        runCactusReferenceGraphViewer(referenceGraphDotFile, cactusDiskDatabaseString)
-        runGraphViz(referenceGraphDotFile, referenceGraphPDFFile, command="circo")
-        logger.info("Ran the reference graph plot script")
-    else:
-        logger.info("Not building a reference graph plot")
-    
     if makeCactusTreeStats:
         cactusTreeFile = os.path.join(outputDir, "cactusStats.xml")
         runCactusTreeStats(cactusTreeFile, cactusDiskDatabaseString)
@@ -118,7 +100,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
     
     if makeMAFs:
         mAFFile = os.path.join(outputDir, "cactus.maf")
-        runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, orderByReference=buildReference, referenceSequenceName="reference")
+        runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString)
         logger.info("Ran the MAF building script")
     else:
         logger.info("Not building the MAFs")
@@ -149,9 +131,7 @@ def runWorkflow_multipleExamples(inputGenFunction,
             runWorkflow_TestScript(sequences, newickTreeString,
                                    batchSystem=batchSystem,
                                    buildTrees=buildTrees, buildFaces=buildFaces, buildReference=buildReference, 
-                                   buildReferenceSequence=buildReferenceSequence,
                                    buildCactusPDF=buildCactusPDF, buildAdjacencyPDF=buildAdjacencyPDF,
-                                   buildReferencePDF=buildReferencePDF,
                                    makeCactusTreeStats=makeCactusTreeStats, makeMAFs=makeMAFs, configFile=configFile,
                                    buildJobTreeStats=buildJobTreeStats)
             system("rm -rf %s" % tempDir)
