@@ -16,6 +16,7 @@
 #include "avl.h"
 #include "commonC.h"
 #include "hashTableC.h"
+#include "cactusReference.h"
 
 /*
  * Stats for a cactus tree that passes cactus_check.
@@ -262,7 +263,8 @@ void blockStats(Flower *flower, struct IntList *counts,
         struct IntList *lengths, struct IntList *degrees,
         struct IntList *leafDegrees, struct IntList *coverage,
         struct IntList *leafCoverage, bool(*includeBlock)(Block *),
-        struct IntList *columnDegrees, struct IntList *columnLeafDegrees, bool perColumnStats) {
+        struct IntList *columnDegrees, struct IntList *columnLeafDegrees,
+        bool perColumnStats) {
     /*
      * Calculates stats on the blocks outside of terminal flowers.
      * Counts is numbers of blocks per non-terminal flower.
@@ -288,8 +290,8 @@ void blockStats(Flower *flower, struct IntList *counts,
             if (includeBlock(block)) {
                 intListAppend(lengths, block_getLength(block));
                 intListAppend(degrees, block_getInstanceNumber(block));
-                intListAppend(coverage, block_getLength(block)
-                        * block_getInstanceNumber(block));
+                intListAppend(coverage,
+                        block_getLength(block) * block_getInstanceNumber(block));
                 Segment *segment;
                 Block_InstanceIterator *segmentIterator =
                         block_getInstanceIterator(block);
@@ -302,9 +304,10 @@ void blockStats(Flower *flower, struct IntList *counts,
                 block_destructInstanceIterator(segmentIterator);
                 intListAppend(leafDegrees, i);
                 intListAppend(leafCoverage, block_getLength(block) * i);
-                if(perColumnStats) {
+                if (perColumnStats) {
                     for (int32_t j = 0; j < block_getLength(block); j++) {
-                        intListAppend(columnDegrees, block_getInstanceNumber(block));
+                        intListAppend(columnDegrees,
+                                block_getInstanceNumber(block));
                         intListAppend(columnLeafDegrees, i);
                     }
                 }
@@ -315,8 +318,9 @@ void blockStats(Flower *flower, struct IntList *counts,
     }
 }
 
-void reportBlockStatsP(Flower *flower, FILE *fileHandle, bool(*includeBlock)(
-        Block *), const char *attribString, bool perColumnStats) {
+void reportBlockStatsP(Flower *flower, FILE *fileHandle,
+        bool(*includeBlock)(Block *), const char *attribString,
+        bool perColumnStats) {
     /*
      * Prints the block stats to the XML file.
      */
@@ -329,7 +333,8 @@ void reportBlockStatsP(Flower *flower, FILE *fileHandle, bool(*includeBlock)(
     struct IntList *columnDegrees = constructEmptyIntList(0);
     struct IntList *columnLeafDegrees = constructEmptyIntList(0);
     blockStats(flower, counts, lengths, degrees, leafDegrees, coverage,
-            leafCoverage, includeBlock, columnDegrees, columnLeafDegrees, perColumnStats);
+            leafCoverage, includeBlock, columnDegrees, columnLeafDegrees,
+            perColumnStats);
     fprintf(fileHandle, "<blocks %s>", attribString);
     tabulateAndPrintIntValues(counts, "counts", fileHandle);
     tabulateAndPrintIntValues(lengths, "lengths", fileHandle);
@@ -367,7 +372,8 @@ bool reportBlockStatsP2(Block *block) {
     return i >= reportBlockStats_minBlockDegree;
 }
 
-static void reportBlockStats(Flower *flower, FILE *fileHandle, int32_t minBlockDegree, bool perColumnStats) {
+static void reportBlockStats(Flower *flower, FILE *fileHandle,
+        int32_t minBlockDegree, bool perColumnStats) {
     reportBlockStats_minBlockDegree = minBlockDegree;
     char *cA = stString_print("minimum_leaf_degree=\"%i\"", minBlockDegree);
     reportBlockStatsP(flower, fileHandle, reportBlockStatsP2, cA,
@@ -513,11 +519,14 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
      * end an end is connected to in a tangle net and the number of tangle groups per net.
      */
     if (flower_isTerminal(flower)) {
-        stList_append(totalEndNumbersPerTerminalGroup, stIntTuple_construct(1,
-                flower_getEndNumber(flower)));
-        stList_append(totalNonFreeStubEndNumbersPerTerminalGroup,
-                stIntTuple_construct(1, flower_getEndNumber(flower)
-                        - flower_getFreeStubEndNumber(flower)));
+        stList_append(totalEndNumbersPerTerminalGroup,
+                stIntTuple_construct(1, flower_getEndNumber(flower)));
+        stList_append(
+                totalNonFreeStubEndNumbersPerTerminalGroup,
+                stIntTuple_construct(
+                        1,
+                        flower_getEndNumber(flower)
+                                - flower_getFreeStubEndNumber(flower)));
 
         End *end;
         Flower_EndIterator *flowerEndIt = flower_getEndIterator(flower);
@@ -526,8 +535,10 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
             endConnectivity += endDegree(end);
         }
         flower_destructEndIterator(flowerEndIt);
-        listAppend(endDegrees, constructFloat((0.0 + endConnectivity)
-                / flower_getEndNumber(flower)));
+        listAppend(
+                endDegrees,
+                constructFloat(
+                        (0.0 + endConnectivity) / flower_getEndNumber(flower)));
         return 1;
     } else {
         int32_t totalGroups = 0;
@@ -556,8 +567,8 @@ void reportNetStats(Flower *flower, FILE *fileHandle) {
     /*
      * Prints the end stats to the XML file.
      */
-    stList *totalEndNumbersPerTerminalGroup = stList_construct3(0, (void(*)(
-            void *)) stIntTuple_destruct);
+    stList *totalEndNumbersPerTerminalGroup = stList_construct3(0,
+            (void(*)(void *)) stIntTuple_destruct);
     stList *totalNonFreeStubEndNumbersPerTerminalGroup = stList_construct3(0,
             (void(*)(void *)) stIntTuple_destruct);
     struct List *endDegrees = constructEmptyList(0, free);
@@ -664,324 +675,73 @@ void reportFaceStats(Flower *flower, int32_t includeLinkGroups,
     destructIntList(isCanonical);
 }
 
-bool isTruePseudoAdjacency(PseudoAdjacency *pseudoAdjacency) {
-    /*
-     * Returns 1 iff the pseudoAdjacency is a true pseudo-adjacency (not linked by and adjacency).
-     */
-    End *_5End = pseudoAdjacency_get5End(pseudoAdjacency);
-    End *_3End = pseudoAdjacency_get3End(pseudoAdjacency);
-    Cap *cap;
-    bool k = 1;
-    End_InstanceIterator *instanceIterator = end_getInstanceIterator(_5End);
-    while ((cap = end_getNext(instanceIterator)) != NULL) {
-        Cap *adjacentCap = cap_getAdjacency(cap);
-        if (adjacentCap != NULL) {
-            assert(end_getOrientation(_3End));
-            if (end_getPositiveOrientation(cap_getEnd(adjacentCap)) == _3End) {
-                k = 0;
-            }
+void reportReferenceStatsP(stList *caps, stList *adjacencyWeights) {
+    Cap *cap = stList_peek(caps);
+    End *end = cap_getEnd(cap);
+    Cap *cap2;
+    End_InstanceIterator *instanceIt = end_getInstanceIterator(end);
+    int32_t i = 0;
+    while ((cap2 = end_getNext(instanceIt)) != NULL) {
+        if (cap_getAdjacency(cap2) != NULL
+                && end_getPositiveOrientation(
+                        cap_getEnd(cap_getAdjacency(cap2)))
+                        == end_getPositiveOrientation(
+                                cap_getEnd(cap_getAdjacency(cap)))) {
+            i++;
         }
     }
-    end_destructInstanceIterator(instanceIterator);
-    return k;
+    end_destructInstanceIterator(instanceIt);
+    assert(i > 0);
+    stList_append(adjacencyWeights, stIntTuple_construct(1, i-1));
 }
 
-void referenceStats(Flower *flower,
-        stList *truePseudoAdjacencyPerTerminalGroup,
-        stList *pseudoAdjacencyPerTerminalGroup) {
-    /*
-     * Calculates stats on the reference genome structure.
-     * Stats are pretty obvious.
-     */
-    //Call recursively..
-    Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
-    Group *group;
-    while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-        if (!group_isLeaf(group)) {
-            referenceStats(group_getNestedFlower(group),
-                    truePseudoAdjacencyPerTerminalGroup,
-                    pseudoAdjacencyPerTerminalGroup);
-        }
-    }
-    flower_destructGroupIterator(groupIterator);
-
-    //Calculate stats for first reference.
-    if (flower_isTerminal(flower)) { //By counting only the terminal problems we
-        //Calculate the number of pseudo ends
-        Reference_PseudoChromosomeIterator *pseudoChromosomeIt =
-                reference_getPseudoChromosomeIterator(flower_getReference(
-                        flower));
-        PseudoChromosome *pseudoChromosome;
-        int32_t i = 0, j = 0;
-        while ((pseudoChromosome = reference_getNextPseudoChromosome(
-                pseudoChromosomeIt)) != NULL) {
-            PseudoChromsome_PseudoAdjacencyIterator *adjacencyIt =
-                    pseudoChromosome_getPseudoAdjacencyIterator(
-                            pseudoChromosome);
-            PseudoAdjacency *pseudoAdjacency;
-
-            while ((pseudoAdjacency = pseudoChromosome_getNextPseudoAdjacency(
-                    adjacencyIt)) != NULL) {
-                if (isTruePseudoAdjacency(pseudoAdjacency)) {
-                    i++;
-                }
-                j++;
-            }
-            pseudoChromosome_destructPseudoAdjacencyIterator(adjacencyIt);
-        }
-        reference_destructPseudoChromosomeIterator(pseudoChromosomeIt);
-        stList_append(truePseudoAdjacencyPerTerminalGroup,
-                stIntTuple_construct(1, i));
-        stList_append(pseudoAdjacencyPerTerminalGroup, stIntTuple_construct(1,
-                j));
-    }
-}
-
-void reportReferenceStats(Flower *flower, FILE *fileHandle) {
+void reportReferenceStats(Flower *flower, const char *referenceEventString,
+        FILE *fileHandle) {
     /*
      * Prints the reference stats to the XML file.
      */
-    if (flower_getReference(flower) != NULL) {
-        stList *truePseudoAdjacencyPerTerminalGroup = stList_construct3(0,
-                (void(*)(void *)) stIntTuple_destruct);
-        stList *pseudoAdjacencyPerTerminalGroup = stList_construct3(0,
-                (void(*)(void *)) stIntTuple_destruct);
-        referenceStats(flower, truePseudoAdjacencyPerTerminalGroup,
-                pseudoAdjacencyPerTerminalGroup);
-        fprintf(fileHandle, "<reference method=\"default\">");
-        tabulateAndPrintIntTupleValues(truePseudoAdjacencyPerTerminalGroup,
-                "true_pseudo_adjacencies_per_terminal_group", fileHandle);
-        tabulateAndPrintIntTupleValues(pseudoAdjacencyPerTerminalGroup,
-                "pseudo_adjacencies_per_terminal_group", fileHandle);
-        printClosingTag("reference", fileHandle);
-        stList_destruct(truePseudoAdjacencyPerTerminalGroup);
-        stList_destruct(pseudoAdjacencyPerTerminalGroup);
+    assert(referenceEventString != NULL);
+    Event *referenceEvent = eventTree_getEventByHeader(
+            flower_getEventTree(flower), referenceEventString);
+    if(referenceEvent == NULL) {
+        st_logDebug("No reference event found for reference string %s, so no reporting reference stats\n", referenceEventString);
+        return;
     }
-}
 
-int64_t reportReferenceStats2P(PseudoAdjacency *pseudoAdjacency,
-        int64_t length, int64_t *blockNumber,
-        stList *locationsOfTruePseudoAdjacencies) {
-    End *_5End = pseudoAdjacency_get5End(pseudoAdjacency);
-    End *_3End = pseudoAdjacency_get3End(pseudoAdjacency);
-    Group *group = end_getGroup(_5End);
-    assert(end_getGroup(_3End) == group);
-    Flower *nestedFlower;
-    if ((nestedFlower = group_getNestedFlower(group)) != NULL) {
-        End *nested5End = flower_getEnd(nestedFlower, end_getName(_5End));
-        End *nested3End = flower_getEnd(nestedFlower, end_getName(_3End));
-        assert(end_isAttached(nested5End));
-        assert(end_isAttached(nested3End));
-        assert(nested5End != NULL);
-        assert(nested3End != NULL);
-        PseudoAdjacency *nestedPseudoAdjacency = end_getPseudoAdjacency(
-                nested5End);
-        assert(nestedPseudoAdjacency != NULL);
-        PseudoChromosome *nestedPseudoChromosome =
-                pseudoAdjacency_getPseudoChromosome(nestedPseudoAdjacency);
-        assert(nestedPseudoChromosome != NULL);
-        if (pseudoAdjacency_get5End(nestedPseudoAdjacency) == nested5End) {
-            assert(pseudoAdjacency_getIndex(nestedPseudoAdjacency) == 0);
-            assert(pseudoChromosome_get5End(nestedPseudoChromosome)
-                    == nested5End);
-            assert(pseudoChromosome_get3End(nestedPseudoChromosome)
-                    == nested3End);
-            for (int32_t i = 0; i < pseudoChromosome_getPseudoAdjacencyNumber(
-                    nestedPseudoChromosome); i++) {
-                nestedPseudoAdjacency
-                        = pseudoChromosome_getPseudoAdjacencyByIndex(
-                                nestedPseudoChromosome, i);
-                length = reportReferenceStats2P(nestedPseudoAdjacency, length,
-                        blockNumber, locationsOfTruePseudoAdjacencies);
-                //Add the length of the intervening block
-                End *otherEnd = pseudoAdjacency_get3End(nestedPseudoAdjacency);
-                if (end_isBlockEnd(otherEnd)) {
-                    if (block_getInstanceNumber(end_getBlock(otherEnd)) > 0) {
-                        length += block_getLength(end_getBlock(otherEnd));
-                    } else {
-                        assert(block_getLength(end_getBlock(otherEnd)) == 1);
-                    }
-                    assert(i != pseudoChromosome_getPseudoAdjacencyNumber(
-                            nestedPseudoChromosome) - 1);
-                } else {
-                    assert(i == pseudoChromosome_getPseudoAdjacencyNumber(
-                            nestedPseudoChromosome) - 1);
-                }
-            }
-        } else {
-            assert(pseudoAdjacency_get3End(nestedPseudoAdjacency) == nested5End);
-            assert(pseudoChromosome_get5End(nestedPseudoChromosome)
-                    == nested3End);
-            assert(pseudoAdjacency_getIndex(nestedPseudoAdjacency)
-                    == pseudoChromosome_getPseudoAdjacencyNumber(
-                            nestedPseudoChromosome) - 1);
-            for (int32_t i = pseudoChromosome_getPseudoAdjacencyNumber(
-                    nestedPseudoChromosome) - 1; i >= 0; i--) {
-                nestedPseudoAdjacency
-                        = pseudoChromosome_getPseudoAdjacencyByIndex(
-                                nestedPseudoChromosome, i);
-                length = reportReferenceStats2P(nestedPseudoAdjacency, length,
-                        blockNumber, locationsOfTruePseudoAdjacencies);
-                //Add the length of the intervening block
-                End *otherEnd = pseudoAdjacency_get5End(nestedPseudoAdjacency);
-                if (end_isBlockEnd(otherEnd)) {
-                    if (block_getInstanceNumber(end_getBlock(otherEnd)) > 0) {
-                        length += block_getLength(end_getBlock(otherEnd));
-                    } else {
-                        assert(block_getLength(end_getBlock(otherEnd)) == 1);
-                    }
-                    assert(i != 0);
-                } else {
-                    assert(i == 0);
-                }
+    stList *adjacencyWeights = stList_construct3(0,
+            (void(*)(void *)) stIntTuple_destruct);
+
+    Flower_EndIterator *endIt = flower_getEndIterator(flower);
+    End *end;
+    while ((end = flower_getNextEnd(endIt)) != NULL) {
+        if (end_isStubEnd(end) && end_isAttached(end)) {
+            Cap *cap = getCapForReferenceEvent(end, event_getName(referenceEvent)); //The cap in the reference
+            assert(cap != NULL);
+            cap = cap_getStrand(cap) ? cap : cap_getReverse(cap);
+            if (!cap_getSide(cap)) {
+                traverseCapsInSequenceOrderFrom3PrimeCap(cap, adjacencyWeights,
+                        NULL, (void(*)(stList *, void *)) reportReferenceStatsP);
             }
         }
-    } else {
-        if (isTruePseudoAdjacency(pseudoAdjacency)) {
-            stList_append(locationsOfTruePseudoAdjacencies,
-                    stIntTuple_construct(1, length));
-        }
     }
-    return length;
+    flower_destructEndIterator(endIt);
+
+    fprintf(fileHandle, "<reference method=\"default\">");
+    tabulateAndPrintIntTupleValues(adjacencyWeights, "adjacencyWeights",
+            fileHandle);
+    printClosingTag("reference", fileHandle);
+    stList_destruct(adjacencyWeights);
 }
 
-int32_t calculateN50(stList *list) {
-    stList *sortedList = stList_copy(list, NULL);
-    stList_sort(sortedList,
-            (int(*)(const void *, const void *)) stIntTuple_cmpFn);
-    int64_t j = 0;
-    for (int32_t i = 0; i < stList_length(sortedList); i++) {
-        j += stIntTuple_getPosition(stList_get(sortedList, i), 0);
-    }
-    int64_t k = 0;
-    int32_t n50 = 0;
-    for (int32_t i = 0; i < stList_length(sortedList); i++) {
-        k += stIntTuple_getPosition(stList_get(sortedList, i), 0);
-        if (k >= j / 2) {
-            n50 = stIntTuple_getPosition(stList_get(sortedList, i), 0);
-            break;
-        }
-    }
-    stList_destruct(sortedList);
-    return n50;
-}
-
-stList *filterZeroValues(stList *values) {
-    stList *filteredValues = stList_construct();
-    for (int32_t i = 0; i < stList_length(values); i++) {
-        stIntTuple *intTuple = stList_get(values, i);
-        if (stIntTuple_getPosition(intTuple, 0) > 0) {
-            stList_append(filteredValues, intTuple);
-        }
-    }
-    return filteredValues;
-}
-
-void reportReferenceStats2(Flower *flower, FILE *fileHandle) {
-    if (flower_getReference(flower) != NULL) {
-        stList *contigLengths = stList_construct3(0,
-                (void(*)(void *)) stIntTuple_destruct);
-        Reference *reference = flower_getReference(flower);
-        Reference_PseudoChromosomeIterator *pseudoChromosomeIterator =
-                reference_getPseudoChromosomeIterator(reference);
-        PseudoChromosome *pseudoChromosome;
-        stList *topLevelPseudoChromosomeLengths = stList_construct3(0,
-                (void(*)(void *)) stIntTuple_destruct);
-        stList *topLevelPseudoChromosomeBlockNumbers = stList_construct3(0,
-                (void(*)(void *)) stIntTuple_destruct);
-        while ((pseudoChromosome = reference_getNextPseudoChromosome(
-                pseudoChromosomeIterator)) != NULL) {
-            //Calculate the lengths of each pseudo chromosome
-            stList *locationsOfTruePseudoAdjacencies = stList_construct3(0,
-                    (void(*)(void *)) stIntTuple_destruct);
-            int64_t length = 0;
-            //Collate the lengths of the stuff in the lower level nets.
-            int64_t blockNumber = 0;
-            for (int32_t i = 0; i < pseudoChromosome_getPseudoAdjacencyNumber(
-                    pseudoChromosome); i++) {
-                PseudoAdjacency *pseudoAdjacency =
-                        pseudoChromosome_getPseudoAdjacencyByIndex(
-                                pseudoChromosome, i);
-                length = reportReferenceStats2P(pseudoAdjacency, length,
-                        &blockNumber, locationsOfTruePseudoAdjacencies);
-                //Add the length of the intervening block
-                End *otherEnd = pseudoAdjacency_get3End(pseudoAdjacency);
-                if (end_isBlockEnd(otherEnd)) {
-                    if (block_getInstanceNumber(end_getBlock(otherEnd)) > 0) {
-                        blockNumber++;
-                        length += block_getLength(end_getBlock(otherEnd));
-                    } else {
-                        assert(block_getLength(end_getBlock(otherEnd)) == 1);
-                    }
-                    assert(i < pseudoChromosome_getPseudoAdjacencyNumber(
-                            pseudoChromosome) - 1);
-                } else {
-                    assert(i == pseudoChromosome_getPseudoAdjacencyNumber(
-                            pseudoChromosome) - 1);
-                }
-            }
-            stList_append(topLevelPseudoChromosomeLengths,
-                    stIntTuple_construct(1, length));
-            stList_append(topLevelPseudoChromosomeBlockNumbers,
-                    stIntTuple_construct(1, blockNumber));
-            //Now convert locations of true pseudo adjacencies into lengths of contigs
-            int32_t k = 0;
-            for (int32_t i = 0; i < stList_length(
-                    locationsOfTruePseudoAdjacencies); i++) {
-                int32_t j = stIntTuple_getPosition(stList_get(
-                        locationsOfTruePseudoAdjacencies, i), 0);
-                stList_append(contigLengths, stIntTuple_construct(1, j - k));
-                k = j;
-            }
-            assert(k <= length);
-            stList_append(contigLengths, stIntTuple_construct(1, length - k)); //Account for the last contig
-            stList_destruct(locationsOfTruePseudoAdjacencies);
-        }
-        reference_destructPseudoChromosomeIterator(pseudoChromosomeIterator);
-
-        //Get values filtered of zero length connections
-        stList *contigLengthsFiltered = filterZeroValues(contigLengths);
-
-        //Now report the results
-
-
-        //Calculate N50
-        int32_t n50 = calculateN50(contigLengths);
-        int32_t n50Filtered = calculateN50(contigLengthsFiltered);
-
-        fprintf(
-                fileHandle,
-                "<reference2 method=\"default\" n50=\"%i\" n50Filtered=\"%i\">",
-                n50, n50Filtered);
-
-        tabulateAndPrintIntTupleValues(topLevelPseudoChromosomeLengths,
-                "top_level_pseudo_chromosome_lengths", fileHandle);
-        tabulateAndPrintIntTupleValues(topLevelPseudoChromosomeBlockNumbers,
-                "top_level_pseudo_chromosome_block_numbers", fileHandle);
-        tabulateAndPrintIntTupleValues(contigLengths, "contig_lengths",
-                fileHandle);
-        tabulateAndPrintIntTupleValues(contigLengthsFiltered,
-                "contig_lengths_filtered", fileHandle);
-
-        printClosingTag("reference2", fileHandle);
-        //Clean up
-        stList_destruct(topLevelPseudoChromosomeLengths);
-        stList_destruct(topLevelPseudoChromosomeBlockNumbers);
-        stList_destruct(contigLengths);
-        stList_destruct(contigLengthsFiltered);
-    }
-}
-
-void reportCactusDiskStats(char *cactusDiskName, Flower *flower,
-        FILE *fileHandle, bool perColumnStats,
-        stSortedSet *includeSpecies, stSortedSet *excludeSpecies) {
+void reportCactusDiskStats(char *cactusDiskName, Flower *flower, const char *referenceEventString,
+        FILE *fileHandle, bool perColumnStats) {
 
     double totalSeqSize = flower_getTotalBaseLength(flower);
     fprintf(
             fileHandle,
             "<stats flower_disk=\"%s\" flower_name=\"%s\" total_sequence_length=\"%f\" >",
-            cactusDiskName, cactusMisc_nameToStringStatic(
-                    flower_getName(flower)), totalSeqSize);
+            cactusDiskName,
+            cactusMisc_nameToStringStatic(flower_getName(flower)), totalSeqSize);
 
     /*
      * Relative entropy numbers on the balance of the tree.
@@ -1025,8 +785,7 @@ void reportCactusDiskStats(char *cactusDiskName, Flower *flower,
     /*
      * Stats on the reference in the reconstruction..
      */
-    reportReferenceStats(flower, fileHandle);
-    reportReferenceStats2(flower, fileHandle);
+     reportReferenceStats(flower, referenceEventString, fileHandle);
 
     printClosingTag("stats", fileHandle);
 }

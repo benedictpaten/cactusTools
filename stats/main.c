@@ -37,22 +37,10 @@ void usage() {
             "-e --outputFile : The file to write the stats in, XML formatted.\n");
     fprintf(stderr,
             "-f --noPerColumnStats : Do not print out per column stats.\n");
-    fprintf(stderr, "-g --includeSpecies : Species to require included\n");
-    fprintf(stderr, "-i --excludedSpecies : Species to require excluded\n");
+    fprintf(
+            stderr,
+            "-g --referenceEventString : String identifying the reference event.\n");
     fprintf(stderr, "-h --help : Print this help screen\n");
-}
-
-static void buildSet(const char *string, stSortedSet *set) {
-    /*
-     * Breaks a string by white space into a bunch of tokens which are then added to the given set.
-     */
-    char *cA = stString_copy(string);
-    char **cA2 = &cA;
-    char *cA3;
-    while((cA3 = stString_getNextWord(cA2)) != NULL) {
-        stSortedSet_insert(set, cA3);
-    }
-    free(cA);
 }
 
 int main(int argc, char *argv[]) {
@@ -69,8 +57,7 @@ int main(int argc, char *argv[]) {
     char * flowerName = "0";
     char * outputFile = NULL;
     bool perColumnStats = 1;
-    stSortedSet *includeSpecies = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
-    stSortedSet *excludeSpecies = stSortedSet_construct3((int (*)(const void *, const void *))strcmp, free);
+    char *referenceEventString = (char *)cactusMisc_getDefaultReferenceEventHeader();
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -81,10 +68,9 @@ int main(int argc, char *argv[]) {
                 required_argument, 0, 'a' }, { "cactusDisk", required_argument,
                 0, 'c' }, { "flowerName", required_argument, 0, 'd' }, {
                 "outputFile", required_argument, 0, 'e' }, {
-                "noPerColumnStats", no_argument, 0, 'f' },
-                { "includeSpecies", required_argument, 0, 'g' },
-                { "help", no_argument, 0, 'h' },
-                { "excludeSpecies", required_argument, 0, 'i' },{ 0, 0, 0, 0 } };
+                "noPerColumnStats", no_argument, 0, 'f' }, {
+                "referenceEventString", optional_argument, 0, 'g' }, { "help",
+                no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 
         int option_index = 0;
 
@@ -115,10 +101,7 @@ int main(int argc, char *argv[]) {
                 usage();
                 return 0;
             case 'g':
-                buildSet(optarg, includeSpecies);
-                break;
-            case 'i':
-                buildSet(optarg, excludeSpecies);
+                referenceEventString = stString_copy(optarg);
                 break;
             default:
                 usage();
@@ -138,12 +121,7 @@ int main(int argc, char *argv[]) {
     //Set up logging
     //////////////////////////////////////////////
 
-    if (logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-        st_setLogLevel(ST_LOGGING_INFO);
-    }
-    if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-        st_setLogLevel(ST_LOGGING_DEBUG);
-    }
+    st_setLogLevelFromString(logLevelString);
 
     //////////////////////////////////////////////
     //Log (some of) the inputs
@@ -165,8 +143,8 @@ int main(int argc, char *argv[]) {
     // Parse the basic reconstruction problem
     ///////////////////////////////////////////////////////////////////////////
 
-    Flower *flower = cactusDisk_getFlower(cactusDisk, cactusMisc_stringToName(
-            flowerName));
+    Flower *flower = cactusDisk_getFlower(cactusDisk,
+            cactusMisc_stringToName(flowerName));
     assert(flower != NULL);
     st_logInfo("Parsed the top level flower of the cactus tree to build\n");
 
@@ -175,7 +153,8 @@ int main(int argc, char *argv[]) {
     ///////////////////////////////////////////////////////////////////////////
 
     FILE *fileHandle = fopen(outputFile, "w");
-    reportCactusDiskStats("EMPTY", flower, fileHandle, perColumnStats, includeSpecies, excludeSpecies);
+    reportCactusDiskStats("EMPTY", flower, referenceEventString, fileHandle,
+            perColumnStats);
     st_logInfo("Finished writing out the stats.\n");
     fclose(fileHandle);
 

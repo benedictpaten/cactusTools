@@ -923,12 +923,7 @@ int main(int argc, char *argv[]){
     assert(outputFile != NULL);
     assert(species != NULL);
 
-    if (logLevelString != NULL && strcmp(logLevelString, "INFO") == 0) {
-        st_setLogLevel(ST_LOGGING_INFO);
-    }
-    if (logLevelString != NULL && strcmp(logLevelString, "DEBUG") == 0) {
-        st_setLogLevel(ST_LOGGING_DEBUG);
-    }
+    st_setLogLevelFromString(logLevelString);
 
     stKVDatabaseConf *kvDatabaseConf = stKVDatabaseConf_constructFromString(
             cactusDiskDatabaseString);

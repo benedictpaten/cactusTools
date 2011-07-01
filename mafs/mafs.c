@@ -16,7 +16,7 @@
 #include "avl.h"
 #include "commonC.h"
 #include "hashTableC.h"
-//#include "cactus_addReferenceSeq.h"
+#include "cactusReference.h"
 
 
 /*
@@ -81,7 +81,7 @@ static int32_t getNumberOnPositiveStrand(Block *block) {
 }
 
 void getMAFBlock(Block *block, FILE *fileHandle) {
-//void getMAFBlock(Block *block, FILE *fileHandle, ReferenceSequence *referenceSequence) {
+    //void getMAFBlock(Block *block, FILE *fileHandle, ReferenceSequence *referenceSequence) {
     /*
      * Outputs a MAF representation of the block to the given file handle.
      */
@@ -100,19 +100,19 @@ void getMAFBlock(Block *block, FILE *fileHandle) {
                     newickTreeString);
             free(newickTreeString);
         } else {
-            fprintf(fileHandle, "a score=%i\n", block_getLength(block)
-                    * block_getInstanceNumber(block));
+            fprintf(fileHandle, "a score=%i\n",
+                    block_getLength(block) * block_getInstanceNumber(block));
         }
         //Now for the reference segment
         /*if (referenceSequence != NULL) {
-            char *instanceString = getConsensusString(block);
-            fprintf(fileHandle, "s\t%s\t%i\t%i\t%s\t%i\t%s\n",
-                    referenceSequence->header, referenceSequence->index,
-                    block_getLength(block), "+", referenceSequence->length,
-                    instanceString);
-            free(instanceString);
-            referenceSequence->index += block_getLength(block);
-        }*/
+         char *instanceString = getConsensusString(block);
+         fprintf(fileHandle, "s\t%s\t%i\t%i\t%s\t%i\t%s\n",
+         referenceSequence->header, referenceSequence->index,
+         block_getLength(block), "+", referenceSequence->length,
+         instanceString);
+         free(instanceString);
+         referenceSequence->index += block_getLength(block);
+         }*/
         //Now add the blocks in
         if (block_getRootInstance(block) != NULL) {
             assert(block_getRootInstance(block) != NULL);
@@ -130,77 +130,47 @@ void getMAFBlock(Block *block, FILE *fileHandle) {
     }
 }
 
-//void getMAFSReferenceOrdered_walkDown(End *end, FILE *fileHandle, ReferenceSequence *referenceSequence);
-static void getMAFSReferenceOrdered_walkDown(End *end, FILE *fileHandle, void (*getMafBlockFn)(Block *, FILE *));
+void(*prepMafBlockFn)(Block *, FILE *);
 
-//void getMAFSReferenceOrdered_walkUp(End *end, FILE *fileHandle, ReferenceSequence *referenceSequence) {
-static void getMAFSReferenceOrdered_walkUp(End *end, FILE *fileHandle, void (*getMafBlockFn)(Block *, FILE *)) {
-    assert(end != NULL);
-    if (end_isBlockEnd(end)) {
-        getMafBlockFn(end_getBlock(end), fileHandle);
-        getMAFSReferenceOrdered_walkDown(end_getOtherBlockEnd(end), fileHandle, getMafBlockFn);
-        //getMAFBlock(end_getBlock(end), fileHandle, referenceSequence);
-        //getMAFSReferenceOrdered_walkDown(end_getOtherBlockEnd(end), fileHandle, referenceSequence);
-    } else {
-        assert(end_isAttached(end));
-        Group *parentGroup = flower_getParentGroup(end_getFlower(end));
-        if (parentGroup != NULL) {
-            //getMAFSReferenceOrdered_walkUp(group_getEnd(parentGroup,
-            //        end_getName(end)), fileHandle, referenceSequence);
-            getMAFSReferenceOrdered_walkUp(group_getEnd(parentGroup,
-                    end_getName(end)), fileHandle, getMafBlockFn);
-        } else { //We reached the end of a pseudo-chromosome!
-            assert(pseudoChromosome_get3End(pseudoAdjacency_getPseudoChromosome(end_getPseudoAdjacency(end))) == end);
-        }
+void prepMafBlock(stList *caps, FILE *fileHandle) {
+    Cap *cap = stList_get(caps, 0);
+    assert(cap_getSide(cap));
+    if(cap_getSegment(cap)) {
+        prepMafBlockFn(segment_getBlock(cap_getSegment(cap)), fileHandle);
     }
 }
 
-//void getMAFSReferenceOrdered_walkDown(End *end, FILE *fileHandle, ReferenceSequence *referenceSequence) {
-static void getMAFSReferenceOrdered_walkDown(End *end, FILE *fileHandle, void (*getMafBlockFn)(Block *, FILE *)) {
-    assert(end != NULL);
-    //assert(end_isAttached(end));
-    Group *group = end_getGroup(end);
-    if (group_isLeaf(group)) { //Walk across
-        PseudoAdjacency *pseudoAdjacency = end_getPseudoAdjacency(end);
-        assert(pseudoAdjacency != NULL);
-        assert(pseudoAdjacency_get3End(pseudoAdjacency) == end || pseudoAdjacency_get5End(pseudoAdjacency) == end);
-        if (pseudoAdjacency_get3End(pseudoAdjacency) == end) {
-            end = pseudoAdjacency_get5End(pseudoAdjacency);
-        } else {
-            end = pseudoAdjacency_get3End(pseudoAdjacency);
-        }
-        //Now walk up
-        //getMAFSReferenceOrdered_walkUp(end, fileHandle, referenceSequence);
-        getMAFSReferenceOrdered_walkUp(end, fileHandle, getMafBlockFn);
-    } else { //Walk down
-        //getMAFSReferenceOrdered_walkDown(flower_getEnd(group_getNestedFlower(
-        //        group), end_getName(end)), fileHandle, referenceSequence);
-        getMAFSReferenceOrdered_walkDown(flower_getEnd(group_getNestedFlower(
-                group), end_getName(end)), fileHandle, getMafBlockFn);
-    }
-}
-
-//void getMAFsReferenceOrdered(Flower *flower, FILE *fileHandle, ReferenceSequence *referenceSequence) {
-void getMAFsReferenceOrdered(Flower *flower, FILE *fileHandle, void (*getMafBlockFn)(Block *, FILE *)) {
+void getMAFsReferenceOrdered2(const char *referenceEventString, Flower *flower,
+        FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *)) {
     /*
      * Outputs MAF representations of all the block in the flower and its descendants, ordered
      * according to the reference ordering.
      */
-    Reference *reference = flower_getReference(flower);
-    assert(reference != NULL);
-    Reference_PseudoChromosomeIterator *it =
-            reference_getPseudoChromosomeIterator(reference);
-    PseudoChromosome *pseudoChromosome;
-    while ((pseudoChromosome = reference_getNextPseudoChromosome(it)) != NULL) {
-        End *end = pseudoChromosome_get5End(pseudoChromosome);
-        assert(!end_isBlockEnd(end));
-        //getMAFSReferenceOrdered_walkDown(end, fileHandle, referenceSequence);
-        getMAFSReferenceOrdered_walkDown(end, fileHandle, getMafBlockFn);
+    Event *referenceEvent = eventTree_getEventByHeader(flower_getEventTree(flower), referenceEventString);
+    End *end;
+    Flower_EndIterator *endIt = flower_getEndIterator(flower);
+    prepMafBlockFn = getMafBlockFn;
+    while ((end = flower_getNextEnd(endIt)) != NULL) {
+        if (end_isStubEnd(end) && end_isAttached(end)) {
+            Cap *cap = getCapForReferenceEvent(end, event_getName(referenceEvent)); //The cap in the reference
+            assert(cap != NULL);
+            assert(cap_getSequence(cap) != NULL);
+            cap = cap_getStrand(cap) ? cap : cap_getReverse(cap);
+            if(!cap_getSide(cap)) {
+                traverseCapsInSequenceOrderFrom3PrimeCap(cap, fileHandle, NULL, (void (*)(stList *, void *))prepMafBlock);
+            }
+        }
     }
-    reference_destructPseudoChromosomeIterator(it);
+    flower_destructEndIterator(endIt);
 }
 
-void getMAFs(Flower *flower, FILE *fileHandle, void (*getMafBlock)(Block *, FILE *)) {
+void getMAFsReferenceOrdered(Flower *flower,
+        FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *)) {
+    getMAFsReferenceOrdered2(cactusMisc_getDefaultReferenceEventHeader(), flower, fileHandle, getMafBlockFn);
+}
+
+void getMAFs(Flower *flower, FILE *fileHandle,
+        void(*getMafBlock)(Block *, FILE *)) {
     /*
      * Outputs MAF representations of all the block sin the flower and its descendants.
      */
@@ -209,7 +179,7 @@ void getMAFs(Flower *flower, FILE *fileHandle, void (*getMafBlock)(Block *, FILE
     Flower_BlockIterator *blockIterator = flower_getBlockIterator(flower);
     Block *block;
     while ((block = flower_getNextBlock(blockIterator)) != NULL) {
-        getMAFBlock(block, fileHandle);
+        getMafBlock(block, fileHandle);
         //getMAFBlock(block, fileHandle, NULL);
     }
     flower_destructBlockIterator(blockIterator);

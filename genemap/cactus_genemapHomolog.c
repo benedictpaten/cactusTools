@@ -1919,12 +1919,7 @@ int main(int argc, char *argv[]) {
    //Set up st_logging
    //////////////////////////////////////////////
 
-   if(st_logLevelString != NULL && strcmp(st_logLevelString, "INFO") == 0) {
-      st_setLogLevel(ST_LOGGING_INFO);
-   }
-   if(st_logLevelString != NULL && strcmp(st_logLevelString, "DEBUG") == 0) {
-      st_setLogLevel(ST_LOGGING_DEBUG);
-   }
+   st_setLogLevelFromString(st_logLevelString);
 
    //////////////////////////////////////////////
    //Log (some of) the inputs
