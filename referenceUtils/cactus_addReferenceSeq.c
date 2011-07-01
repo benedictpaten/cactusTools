@@ -110,12 +110,16 @@ char *formatSequenceHeader1(Sequence *sequence) {
 }
 
 char *getConsensusString(Block *block) {
-    //st_logInfo("\nGetting consensus string, blockOrientation: %d...:\n", block_getOrientation(block));
+    st_logInfo("Get consensus str\n");
+    assert(block != NULL);
+    st_logInfo("name: %s\n", cactusMisc_nameToString(block_getName(block)) );
+    st_logInfo("%d segments\n", block_getInstanceNumber(block));
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     Segment *segment;
     struct List *list = constructEmptyList(0, free);
     while ((segment = block_getNext(it)) != NULL) {
         if (segment_getSequence(segment) != NULL) {
+            st_logInfo("segment of %s\n", sequence_getHeader(segment_getSequence(segment)) );
             listAppend(list, segment_getString(segment));
             //st_logInfo("%s\t%d\t%s\n", event_getHeader(segment_getEvent(segment)), segment_getStrand(segment), segment_getString(segment));
         }
@@ -386,6 +390,8 @@ void reference_walkDown(End *end, ReferenceSequence *refseq, struct IntList *pre
     }
 }
 
+
+
 MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
         ReferenceSequence *refseq, Event *event) {
     /*
@@ -408,10 +414,45 @@ MetaSequence *constructReferenceMetaSequence(End *end, CactusDisk *cactusDisk,
     return metaSequence;
 }
 
-void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower, Name name) {
-    /*
-     *Attach MetaSequence to cactus flowers
-     */
+
+void walkDown(MetaSequence *metaSeq, End *end);
+void walkUp(MetaSequence *metaSeq, End *end){
+    assert(end != NULL);
+    if( end_isBlockEnd(end) ){
+        walkDown( metaSeq, end_getOtherBlockEnd(end) );
+    }else{
+        Group *parentGroup = flower_getParentGroup(end_getFlower(end));
+        if (parentGroup != NULL){
+            walkUp( metaSeq, group_getEnd(parentGroup, end_getName(end)) );
+        }
+    }
+}
+
+void walkDown(MetaSequence *metaSeq, End *end){
+    assert(end != NULL);
+    Group *group = end_getGroup(end);
+    if( group_isLeaf(group) ){//walk across
+        walkUp( metaSeq, getPseudoAdjacentEnd(end) );
+    }else{ //walk down
+        Flower *nestedFlower = group_getNestedFlower(group);
+        End *inheritedEnd = flower_getEnd( nestedFlower, end_getName(end) );
+        if(flower_getSequence(nestedFlower, metaSequence_getName(metaSeq)) == NULL){
+            sequence_construct(metaSeq, nestedFlower);
+        }
+        walkDown(metaSeq, inheritedEnd);
+    }
+}
+
+void constructReferenceSequence(MetaSequence *metaSequence, End *end){
+    Flower *flower = end_getFlower(end);
+    if(flower_getSequence(flower, metaSequence_getName(metaSequence)) == NULL){
+        sequence_construct(metaSequence, flower);
+    }
+    walkDown(metaSequence, end);
+}
+
+/*void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower, Name name) {
+    //Attach MetaSequence to cactus flowers
     assert(flower != NULL);
     Reference *ref = flower_getReference(flower);
 
@@ -431,7 +472,7 @@ void constructReferenceSequence(MetaSequence *metaSequence, Flower *flower, Name
         }
     }
     flower_destructGroupIterator(it);
-}
+}*/
 
 char *getChromName(char *name, int num) {
     /*
@@ -534,15 +575,20 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
     PseudoChromosome *pseudoChromosome;
     int chromNum = 0;
 
+    st_logInfo("Number of PsuedoChromosomes: %d\n", reference_getPseudoChromosomeNumber(reference) );
     while ((pseudoChromosome = reference_getNextPseudoChromosome(it)) != NULL) {//Each pseudoChrom
-        chromNum++;
-        char *chromHeader = getChromName(header, chromNum);
         End *end = pseudoChromosome_get5End(pseudoChromosome);
         assert(!end_isBlockEnd(end));
 
-        int len = pseudoChromosome_getLength(end);
-        if(len == 0){continue;}
+        int32_t len = pseudoChromosome_getLength(end);
+        if(len == 0){
+            st_logInfo("pseudoChrom with len 0, skip.\n");
+            continue;
+        }
         //assert(len != 0);
+        chromNum++;
+        //if(chromNum != 29841){continue;}
+        char *chromHeader = getChromName(header, chromNum);
         ReferenceSequence *refseq = referenceSequence_construct(flower,
                 chromHeader, len);
 
@@ -566,7 +612,8 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
 
         //st_logInfo("\nConstructing reference sequence...\n");
         startTime = time(NULL);
-        constructReferenceSequence(metaSequence, flower, pseudoChromosome_getName(pseudoChromosome) );
+        //constructReferenceSequence(metaSequence, flower, pseudoChromosome_getName(pseudoChromosome) );
+        constructReferenceSequence(metaSequence, end);
         st_logInfo("constructReferenceSequence:\t%d seconds\n", time(NULL) - startTime);
         //st_logInfo("Constructed reference sequence successfully.\n");
 
@@ -600,7 +647,7 @@ Flower *flower_addReferenceSequence(Flower *flower, CactusDisk *cactusDisk,
         startTime = time(NULL);
         referenceSequence_destruct(refseq);
         st_logInfo("referenceSequence_destruct:\t%d seconds\n", time(NULL) - startTime);
-        free(chromHeader);
+        //free(chromHeader);
     }
     reference_destructPseudoChromosomeIterator(it);
 

@@ -70,15 +70,20 @@ Sequence *getSequenceMatchesHeader(Flower *flower, char *header){
 struct List *getSequences(Flower *flower, char *name){
    //get names of all the sequences in 'flower' that have their names start with 'name'
    Sequence *sequence;
+   //st_logInfo("getSequences for %s\n", name);
+
    struct List *seqs = constructEmptyList(0, free);
    Flower_SequenceIterator * seqIterator = flower_getSequenceIterator(flower);
    while((sequence = flower_getNextSequence(seqIterator)) != NULL){
       char *sequenceHeader = formatSequenceHeader(sequence);
+      //st_logInfo("\tcurrseq: %s\n", sequenceHeader);
+
       //if(strstr(sequenceHeader, name) == sequenceHeader){
       if(strstr(sequenceHeader, name) != NULL){
          listAppend(seqs, sequenceHeader);
+         //st_logInfo("\t\tmatch!\n");
       }
-      free(sequenceHeader);
+      //free(sequenceHeader);
    }
    flower_destructSequenceIterator(seqIterator);
    return seqs;

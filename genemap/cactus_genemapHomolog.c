@@ -1544,7 +1544,7 @@ bool mapGene(FILE *fileHandle, struct Gene *refgene, struct List *spcList){
 
         mdExons = gene_findMissingDataExons(sortedMappedExons);
         
-        correctForAltSplice(sortedMappedExons);
+        //correctForAltSplice(sortedMappedExons);
 
         if (checkCompleteHomologyForward(sortedMappedExons, refgene->exons->length) ||
             checkCompleteHomologyBackward(sortedMappedExons, refgene->exons->length)){

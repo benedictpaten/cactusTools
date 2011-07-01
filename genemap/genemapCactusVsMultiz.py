@@ -54,7 +54,7 @@ class Exon:
         maxIndel = self.codonBases*0.1
         #self.gapBases = int(items[16])
         #self.numRanges = int(items[16])
-        if self.missingBases > 0:#if has any gap at all, marked it as having 'missing data'
+        if self.missingBases > 10:#if has any gap at all, marked it as having 'missing data'
             self.status = "MD" #Missing Data
         elif self.alnBases == 0:
             self.status = "NA" #Not Applicaple 
@@ -849,7 +849,7 @@ def dupStats(tree):
 
 
 def usage():
-    sys.stderr.write("Usage: cactusVSmultiz.py geneNameToRefseqIdFile multizMarkFile cactusXMLFile\n")
+    sys.stderr.write("Usage: cactusVSmultiz.py geneNameToRefseqIdFile multizMarkFile cactusXMLFile outputFile\n")
     sys.exit(2)
 
 def main():

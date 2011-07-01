@@ -66,4 +66,5 @@ def runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, flowerName="0",
     
 def runCactusAddReferenceSequence(cactusDiskDatabaseString, flowerName="0",
                           logLevel="DEBUG", referenceEventString="reference"):
-    system("cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --referenceEventString %s" % (cactusDiskDatabaseString, logLevel, referenceEventString))
+    system("valgrind --leak-check=yes cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --referenceEventString %s" % (cactusDiskDatabaseString, logLevel, referenceEventString))
+    #system("cactus_addReferenceSeq --cactusDisk '%s' --logLevel %s --referenceEventString %s" % (cactusDiskDatabaseString, logLevel, referenceEventString))

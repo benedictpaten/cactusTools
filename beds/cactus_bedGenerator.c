@@ -76,8 +76,10 @@ void block_getBED(Block *block, FILE *fileHandle, char *species, char *chr, int 
 void chain_getBEDs(Chain *chain, Cap *cap, FILE *fileHandle, char *species, char *chr, int start, int level) {
     /*
      */
-    st_logInfo("chain_getBEDs\n");
+    st_logInfo("chain_getBEDs: species %s, chr %s, start %d, level %d\n", species, chr, start, level);
+    st_logInfo("\tCap: %s\n", cactusMisc_nameToString( cap_getName(cap) ) );
     char *chainName = cactusMisc_nameToString(chain_getName(chain));
+    st_logInfo("\tchainName: %s\n", chainName);
     int chromStart;
     int chromEnd;
     int blockCount;
@@ -317,6 +319,7 @@ int main(int argc, char *argv[]) {
 
     st_logInfo("Flower name : %s\n", flowerName);
     st_logInfo("Output BED file : %s\n", outputFile);
+    st_logInfo("Species: %s\n", species);
 
     //////////////////////////////////////////////
     //Load the database
