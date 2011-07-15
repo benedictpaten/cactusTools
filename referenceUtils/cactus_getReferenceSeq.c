@@ -69,6 +69,9 @@ void getReferenceSequences(FILE *fileHandle, Flower *flower, char *name){
       //if 'sequenceHeader' starts with 'name'
       //if(strstr(sequenceHeader, name) == sequenceHeader){
       if(strstr(sequenceHeader, name) != NULL){
+          if(sequence_getLength(sequence) == 0){//skip empty sequences
+              continue;
+          }
           fprintf(fileHandle, ">%s\n", sequenceHeader);
           int linelen = 50;
           for(int32_t i=sequence_getStart(sequence); i< sequence_getLength(sequence); i += linelen){

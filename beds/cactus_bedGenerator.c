@@ -16,10 +16,10 @@
 #include "avl.h"
 #include "commonC.h"
 #include "hashTableC.h"
-#include "cactusUtils.h"
-//#include "cactus_addReferenceSeq.h"
+#include "sonLibSortedSet.h"
 
 /*
+ *Jul 4 2011: rewrite for better efficiency
  *Feb 7 2011: modify to include the referene sequence in the flower
  *Jan 19 2011: Correct to only put chain-segments in the same bed-record if there are links between them
  *(any two adjacent segments in the record must belong to two different blocks). 
@@ -29,6 +29,54 @@
  *Sep 08 2010: nknguyen@soe.ucsc.edu
  *Print to outputFile bed record of each chain of the interested/inputed species.
  */
+char *getCoor(char *header, int *start);
+int segmentCmp(const void *s1,const void *s2);
+//int segmentCmp(Segment *s1,Segment *s2);
+
+struct Thread{
+    char *header;
+    char *chr;
+    char *chainName;
+    int32_t start;
+    int32_t segmentNumber;
+    stSortedSet *segments;
+};
+
+struct Thread *constructThread( char *header, char *chainName ){
+    struct Thread *thread = st_malloc( sizeof(struct Thread) );
+    thread->header = stString_copy( header );
+    thread->chr = stString_copy(getCoor( header, &(thread->start) ));
+    thread->chainName = stString_copy( chainName );
+    thread->segments = stSortedSet_construct3(segmentCmp, NULL);
+    return thread;
+}
+
+void destructThread( struct Thread *thread ){
+    stSortedSet_destruct(thread->segments);
+    free( thread->header );
+    free( thread->chr );
+    free( thread->chainName );
+    free( thread);
+}
+
+int segmentCmp(const void *sm1, const void *sm2){
+    //make sure segment is on the + strand
+    /*if( !segment_getStrand(s1) ){ s1 = segment_getReverse( s1 ); }
+    if( !segment_getStrand(s2) ){ s2 = segment_getReverse( s2 ); }*/
+    Segment *s1 = (Segment *) sm1;
+    Segment *s2 = (Segment *) sm2;
+    assert( segment_getStrand(s1) );
+    assert( segment_getStrand(s2) );
+    int32_t start1 = segment_getStart(s1);
+    int32_t start2 = segment_getStart(s2);
+    if(start1 == start2) {
+        return 0;
+    }else if( start1 < start2){
+        return -1;
+    }else{
+        return 1;
+    }
+}
 
 bool isLinked(End *end1, End *end2){
     //Return true if there is a link between end1 and end2, otherwise return false
@@ -45,7 +93,54 @@ bool isLinked(End *end1, End *end2){
     return false;
 }
 
-void block_getBED(Block *block, FILE *fileHandle, char *species, char *chr, int start, int level) {
+char *formatSequenceHeader(Sequence *sequence) {
+    const char *sequenceHeader = sequence_getHeader(sequence);
+    if (strlen(sequenceHeader) > 0) {
+        char *cA = st_malloc(sizeof(char) * (1 + strlen(sequenceHeader)));
+        sscanf(sequenceHeader, "%s", cA);
+        return cA;
+    } else {
+        return cactusMisc_nameToString(sequence_getName(sequence));
+    }
+}
+
+Sequence *getSequenceMatchesHeader(Flower *flower, char *header){
+    //Returns the first Sequence whose name matches 'header'
+    Flower_SequenceIterator *it = flower_getSequenceIterator(flower);
+    Sequence *sequence = NULL;
+    while((sequence = flower_getNextSequence(it)) != NULL){
+        char *sequenceHeader = formatSequenceHeader(sequence);
+        if(strstr(sequenceHeader, header) != NULL){
+            free(sequenceHeader);
+            break;
+        }
+        free(sequenceHeader);
+    }
+    flower_destructSequenceIterator(it);
+    return sequence;
+}
+
+char *getCoor(char *header, int *start){
+    char *chr;
+    char *tok;
+    *start = 0;
+    char sep[] = ".";
+
+    assert(header != NULL);
+    strtok(stString_copy(header), sep); //species e.g "hg18"
+    chr = strtok(NULL, sep);
+    if(chr == NULL){
+        chr = "";
+    }else{
+        tok = strtok(NULL, sep);//chromsize
+        if(tok != NULL){
+            sscanf(strtok(NULL, sep), "%d", start);
+        }
+    }
+    return chr;
+}
+
+void block_getBED(Block *block, FILE *fileHandle, char *species, int level) {
     /*
      */
     Block_InstanceIterator *instanceIterator = block_getInstanceIterator(block);
@@ -54,7 +149,11 @@ void block_getBED(Block *block, FILE *fileHandle, char *species, char *chr, int 
         Sequence *sequence = segment_getSequence(segment);
         if(sequence != NULL) {
             char *sequenceHeader = formatSequenceHeader(sequence);
-            if(strcmp(sequenceHeader, species) == 0){
+            Event *event = sequence_getEvent( sequence );
+            char *eventHeader = stString_copy( event_getHeader( event ) );
+            if(strcmp(eventHeader, species) == 0){
+                int start;
+                char *chr = getCoor( sequenceHeader, &start );
                 if(!segment_getStrand(segment)){//if segment on the neg strand, reverse it
                     segment = segment_getReverse(segment);
                 }
@@ -65,7 +164,6 @@ void block_getBED(Block *block, FILE *fileHandle, char *species, char *chr, int 
                 int s = cap_getCoordinate(cap5) + start - 1;
                 int e = cap_getCoordinate(cap3) + start + 1 - 1;
                 fprintf(fileHandle, "%s %d %d %s.%d %d %s %d %d %d %d %d %d\n", chr, s, e, "NA", level, 0, ".", s, e, 0, 1, e-s,0);
-                //fprintf(fileHandle, "%s %d %d %d %d %s %d %d %d %d %d %d\n", chr, s, e, level, 0, "+", s, e, 0, 1, e-s,0);
             }
             free(sequenceHeader);
         }
@@ -73,153 +171,187 @@ void block_getBED(Block *block, FILE *fileHandle, char *species, char *chr, int 
     block_destructInstanceIterator(instanceIterator);
 }
 
-void chain_getBEDs(Chain *chain, Cap *cap, FILE *fileHandle, char *species, char *chr, int start, int level) {
-    /*
-     */
-    st_logInfo("chain_getBEDs: species %s, chr %s, start %d, level %d\n", species, chr, start, level);
-    st_logInfo("\tCap: %s\n", cactusMisc_nameToString( cap_getName(cap) ) );
-    char *chainName = cactusMisc_nameToString(chain_getName(chain));
-    st_logInfo("\tchainName: %s\n", chainName);
-    int chromStart;
-    int chromEnd;
-    int blockCount;
-    struct IntList *blockSizes = constructEmptyIntList(0);
+void removeSubSortedSet( stSortedSet *segments, Segment *segment){
+    st_logInfo("RemoveSubSortedSet...\n");
+    Segment *sm;
+    while( ( sm = stSortedSet_searchLessThan(segments, segment) ) != NULL ){
+        stSortedSet_remove(segments, sm);
+    }
+    return;
+}
+
+void printThread( struct Thread *thread, FILE *fileHandle, int32_t level ){
     struct IntList *blockStarts = constructEmptyIntList(0);
-    Block *block;
-    End *currEnd;
+    struct IntList *blockSizes = constructEmptyIntList(0);
+
     End *prevOtherEnd = NULL;
 
-    if(isStubCap(cap)){ //startCap of the current flower's thread
-        cap = cap_getAdjacency(cap);
-    }//else: current cap is somewhere in the middle of the thread
+    stSortedSetIterator *it = stSortedSet_getIterator(thread->segments);
+    Segment *sm;
     
-    if(cap == NULL){ return; }
-    while(!isStubCap(cap)){
-        currEnd = cap_getEnd(cap);
-        block = end_getBlock(currEnd);
-        Chain *currchain = block_getChain(block);
-        if (chain == currchain){
-            if( prevOtherEnd == NULL || isLinked(currEnd, prevOtherEnd) ){
-                intListAppend(blockStarts, cap_getCoordinate(cap));
-                intListAppend(blockSizes, cap_getCoordinate(cap_getOtherSegmentCap(cap)) - cap_getCoordinate(cap) +1);
-            }else{
-                chain_getBEDs(chain, cap, fileHandle, species, chr, start, level);
-                break;
-            }
+    while( (sm = stSortedSet_getNext(it)) != NULL ){
+        if( prevOtherEnd == NULL || isLinked( prevOtherEnd, cap_getEnd(segment_get5Cap(sm)) ) ){
+            intListAppend(blockStarts, segment_getStart(sm));
+            intListAppend(blockSizes, segment_getLength(sm));
+        }else{
+            break;
         }
-        //st_logInfo("cap %s, %d\t", cactusMisc_nameToString(cap_getName(cap)), cap_getCoordinate(cap));
-        prevOtherEnd = end_getOtherBlockEnd(currEnd);
-        moveCapToNextBlock(&cap);
-        //st_logInfo("movedTo %s, %d\n", cactusMisc_nameToString(cap_getName(cap)), cap_getCoordinate(cap));
+        prevOtherEnd = cap_getEnd(segment_get3Cap(sm));
     }
-    
-    blockCount = blockStarts->length;
-    if(blockCount == 0){
-       //fprintf(fileHandle, "No block found for chain %s\n", chainName);
+    stSortedSet_destructIterator(it);
+
+    if (sm != NULL){
+        //Start new bed record. Remove all the previous Segments first:
+        removeSubSortedSet(thread->segments, sm); 
+        fprintf(fileHandle, "SPLIT TO A NEW BED RECORD!\n");
+        printThread( thread, fileHandle, level );
+    }
+
+    int32_t blockCount = blockStarts->length;
+    if( blockCount == 0 ){
         return;
     }
-    chromStart = blockStarts->list[0];
-    chromEnd = blockStarts->list[blockCount -1] + blockSizes->list[blockCount -1];
-    int i;
-    for(i=0; i< blockCount; i++){
-        blockStarts->list[i] -= chromStart;
-    }
-    //chromStart = chromStart + start -2;
-    //chromEnd = chromEnd + start -2;
-    chromStart = chromStart + start -1;
-    chromEnd = chromEnd + start -1;
-    fprintf(fileHandle, "%s %d %d %s.%d %d %s %d %d %s %d ", chr, chromStart, chromEnd, chainName, level, 0, ".", chromStart, chromEnd, "0", blockCount);
-    //fprintf(fileHandle, "%s %d %d %d %d %s %d %d %s %d ", chr, chromStart, chromEnd, level, 0, "+", chromStart, chromEnd, "0", blockCount);
+    //st_logInfo("\tblockCount = %d\n", blockCount);
+    
+    int32_t chromStart = blockStarts->list[0] + thread->start -1;
+    int32_t chromEnd = blockStarts->list[blockCount -1] + blockSizes->list[blockCount -1] + thread->start -1;
+    
+    fprintf(fileHandle, "%s %d %d %s.%d %d %s %d %d %s %d ", thread->chr, chromStart, chromEnd,
+                         thread->chainName, level, 0, ".", chromStart, chromEnd, "0", blockCount);
+    
     //Print blockSizes
+    int32_t i;
     for(i=0; i< blockCount; i++){
         fprintf(fileHandle, "%d,", blockSizes->list[i] );
     }
+    destructIntList(blockSizes);
     fprintf(fileHandle, " ");
     for(i=0; i< blockCount; i++){
         fprintf(fileHandle, "%d,", blockStarts->list[i] );
     }
+    destructIntList(blockStarts);
     fprintf(fileHandle, "\n");
+    return;
+}
+
+void addSegmentToThread( struct Thread *thread, Segment *segment ){
+    if( !segment_getStrand(segment) ){//make sure segment is on the + strand
+        segment = segment_getReverse( segment );
+    }
+    stSortedSet_insert(thread->segments, segment);
+    return;
+}
+
+void addSegments( struct List *threads, Block *block, char *header, char *chainName ){
+    //st_logInfo("\taddSegments, header %s, chain %s\n", header, chainName);
+    Segment *segment;
+    int32_t startTime;
+    struct Thread *thread = NULL;
+    Block_InstanceIterator *it = block_getInstanceIterator(block);
+    while( (segment = block_getNext(it)) != NULL ){
+        Sequence *seq = segment_getSequence( segment );
+        if(seq != NULL){
+            char *seqHeader = formatSequenceHeader( seq );
+            char *eventHeader = stString_copy( event_getHeader( sequence_getEvent(seq) ) );
+            if( strcmp(eventHeader, header) == 0 ){
+                //st_logInfo("\t\tFound %s\n", seqHeader);
+                int32_t i;
+                for(i = 0; i < threads->length; i++){
+                    thread = threads->list[i];
+                    if( strcmp(thread->header, seqHeader) == 0 ){
+                        break;
+                    }
+                }
+                if( i == threads->length ){
+                    thread = constructThread( seqHeader, chainName );
+                    listAppend(threads, thread);
+                }
+                startTime = time(NULL);
+                addSegmentToThread( thread, segment );
+                //st_logInfo("addSegmentToThread in %i seconds/\n", time(NULL) - startTime);
+            }
+            free(seqHeader);
+            free(eventHeader);
+        }
+    }
+    block_destructInstanceIterator( it );
+}
+
+void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
+    /*
+     */
+    //st_logInfo("chain_getBEDs: species %s, level %d\n", species, level);
+    char *chainName = cactusMisc_nameToString(chain_getName(chain));
+    //st_logInfo("\tchainName: %s\n", chainName);
+    
+    //Get all the threads with eventHeader 'species'
+    int32_t startTime = time(NULL);
+    struct List * threads = constructEmptyList(0, free);
+    int32_t numBlocks;
+    Block **blocks = chain_getBlockChain( chain, &numBlocks );
+    for( int32_t i = 0; i< numBlocks; i++ ){
+        Block * block = blocks[i];
+        addSegments( threads, block, species, chainName );
+    }
+    free(blocks);
+    //st_logInfo("Adding all segments for the chain in %i seconds/\n", time(NULL) - startTime);
+    //st_logInfo("\t%d blocks; %d threads\n", numBlocks, threads->length);
+
+    //Print the beds:
+    startTime = time(NULL);
+    for( int32_t i = 0; i< threads->length; i++ ){
+        struct Thread *thread = threads->list[i];
+        printThread( thread, fileHandle, level );
+        destructThread(thread);
+    }
+    //st_logInfo("printThread in %i seconds/\n", time(NULL) - startTime);
+
+    free(threads->list);
+    free(threads);
+    //destructList(threads);
+    return;
 }
 
 void getBEDs(Flower *flower, FILE *fileHandle, char *species, int level){
-    char *chr;
-    char *tok;
-    int start = 0;
-    //int start = 1;
-    char sep[] = ".";
-
-    assert(species != NULL);
-    strtok(stString_copy(species), sep); //species e.g "hg18"
-    chr = strtok(NULL, sep);
-    if(chr == NULL){
-        chr = "";
-    }else{
-        tok = strtok(NULL, sep);//chromsize
-        if(tok != NULL){
-            sscanf(strtok(NULL, sep), "%d", &start);
-        }
+    //st_logInfo("getBEDs, species %s\n", species);
+    Chain *chain;
+    int32_t startTime;
+    Flower_ChainIterator *chainIt = flower_getChainIterator( flower );
+    
+    //Get beds for chains at current level
+    while( (chain = flower_getNextChain(chainIt)) != NULL ){
+        startTime = time(NULL);
+        chain_getBEDs(chain, fileHandle, species, level);
+        //st_logInfo("chain_getBEDs in %i seconds/\n", time(NULL) - startTime);
     }
-    //sscanf(strtok(NULL, sep), "%d", &len);
-    //sscanf(strtok(NULL, sep), "%d", &strand);
-    //fprintf(stderr, "chrom *%s*, chromsize %d, start %d\n", chr, chrsize, start);
+    flower_destructChainIterator( chainIt );
 
-    //Get beds for all chain of current level:
-    struct List *startCaps;
-    startCaps = flower_getThreadStarts(flower, species);
-    st_logInfo("Number of start Caps at flower %s is %d\n",
-                cactusMisc_nameToString(flower_getName(flower)), startCaps->length);
-    for(int i=0; i< startCaps->length; i++){
-        Cap *startcap = startCaps->list[i];
-        Flower_ChainIterator *chainIterator = flower_getChainIterator(flower);
-        Chain *chain;
-        while((chain = flower_getNextChain(chainIterator)) != NULL){
-            chain_getBEDs(chain, startcap, fileHandle, species, chr, start, level);
-        }
-        flower_destructChainIterator(chainIterator);
-    }
-
-    //Get beds for non-trivial chains
-    Flower_BlockIterator *blockIterator = flower_getBlockIterator(flower);
+    //Get beds for non-trivial chains:
+    startTime = time(NULL);
+    Flower_BlockIterator *blockIt = flower_getBlockIterator( flower );
     Block *block;
-    while((block = flower_getNextBlock(blockIterator)) != NULL){
-        if(block_getChain(block) == NULL){//non-trivial chain
-            block_getBED(block, fileHandle, species, chr, start, level);
+    while( (block = flower_getNextBlock(blockIt) ) != NULL ){
+        if( block_getChain(block) == NULL ){//non-trivial chain
+            block_getBED(block, fileHandle, species, level);
         }
     }
-    flower_destructBlockIterator(blockIterator);
+    flower_destructBlockIterator( blockIt );
+    //st_logInfo("(block_getChain)s in %i seconds/\n", time(NULL) - startTime);
 
-    //Call child flowers recursively.
-    Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
+    //Call child flowers recursively
+    Flower_GroupIterator *groupIt = flower_getGroupIterator( flower );
     Group *group;
     level ++;
-    //fprintf(fileHandle, "Go to level %d\n", level);
-    while((group = flower_getNextGroup(groupIterator)) != NULL) {
-        Flower *nestedFlower = group_getNestedFlower(group);
-        if(nestedFlower != NULL) {
-            //fprintf(fileHandle, "level %d\n", level);
-            getBEDs(group_getNestedFlower(group), fileHandle, species, level); //recursive call.
+    if (level > 5){ return; } // ONLY PRINT OUT THE FIRST 5 LEVEL BEDs
+    while( (group = flower_getNextGroup(groupIt) ) != NULL ){
+        Flower *nestedFlower = group_getNestedFlower( group );
+        if( nestedFlower != NULL ){
+            getBEDs(nestedFlower, fileHandle, species, level);
         }
     }
-    flower_destructGroupIterator(groupIterator);
-}
+    flower_destructGroupIterator( groupIt );
 
-/*struct List *getSequences(Flower *flower, char *name){
-   //get names of all the sequences in 'flower' that have their names start with 'name'
-   Sequence *sequence;
-   struct List *seqs = constructEmptyList(0, free);
-   Flower_SequenceIterator * seqIterator = flower_getSequenceIterator(flower);
-   while((sequence = flower_getNextSequence(seqIterator)) != NULL){
-      char *sequenceHeader = formatSequenceHeader(sequence);
-      //if 'sequenceHeader' starts with 'name'
-      //if(strstr(sequenceHeader, name) == sequenceHeader){
-      if(strstr(sequenceHeader, name) != NULL){
-         listAppend(seqs, sequenceHeader);
-      }
-      //free(sequenceHeader);
-   }
-   flower_destructSequenceIterator(seqIterator);
-   return seqs;
-}*/
+}
 
 void usage() {
     fprintf(stderr, "cactus_bedGenerator, version 0.2\n");
@@ -337,20 +469,13 @@ int main(int argc, char *argv[]) {
 
     int64_t startTime = time(NULL);
     FILE *fileHandle = fopen(outputFile, "w");
-    //fprintf(fileHandle, "track name=%s\n", species);
+    
     if(strstr(species, "reference") != NULL && getSequenceMatchesHeader(flower, "reference") == NULL){
-        //flower_addReferenceSequence(flower, cactusDisk, species);
         fprintf(stderr, "No reference sequence found in cactusDisk\n");
         exit(EXIT_FAILURE);
     }
-    //addReferenceSequenceTest(flower);
-    char *seq;
-    struct List *seqs = getSequences(flower, species);    
-    for(int i = 0; i < seqs->length; i++){
-        seq = seqs->list[i];
-        st_logInfo("Getting beds for sequence \"%s\"\n", seq);
-        getBEDs(flower, fileHandle, seq, 0);
-    }
+   
+    getBEDs(flower, fileHandle, species, 0);
     fclose(fileHandle);
     st_logInfo("Got the beds in %i seconds/\n", time(NULL) - startTime);
 
