@@ -73,12 +73,12 @@ void getReferenceSequences(FILE *fileHandle, Flower *flower, char *name){
               continue;
           }
           fprintf(fileHandle, ">%s\n", sequenceHeader);
-          int linelen = 50;
-          for(int32_t i=sequence_getStart(sequence); i< sequence_getLength(sequence); i += linelen){
-              if( sequence_getLength(sequence) - i < 50 ){
-                  linelen = sequence_getLength(sequence) - i + 1;
-              }
-              fprintf(fileHandle, "%s\n", sequence_getString(sequence, i, linelen, 1));
+          const int32_t lineLength = 10000000;
+          const int32_t end = sequence_getLength(sequence) + sequence_getStart(sequence);
+          for(int32_t i=sequence_getStart(sequence); i<end; i += lineLength) {
+              char *cA = sequence_getString(sequence, i, end - i < lineLength ?  end - i : lineLength, 1);
+              fprintf(fileHandle, "%s\n", cA);
+              free(cA);
           }
       }
       //free(sequenceHeader);
