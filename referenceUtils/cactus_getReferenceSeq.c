@@ -57,8 +57,6 @@ Sequence *getSequenceMatchesHeader(Flower *flower, char *header){
     return NULL;
 }
 
-
-
 void getReferenceSequences(FILE *fileHandle, Flower *flower, char *name){
    //get names of all the sequences in 'flower' that have their names start with 'name'
    Sequence *sequence;
@@ -66,10 +64,9 @@ void getReferenceSequences(FILE *fileHandle, Flower *flower, char *name){
    while((sequence = flower_getNextSequence(seqIterator)) != NULL){
       char *sequenceHeader = formatSequenceHeader(sequence);
       st_logInfo("Sequence %s\n", sequenceHeader);
-      //if 'sequenceHeader' starts with 'name'
-      //if(strstr(sequenceHeader, name) == sequenceHeader){
       if(strstr(sequenceHeader, name) != NULL){
           if(sequence_getLength(sequence) == 0){//skip empty sequences
+              free(sequenceHeader);
               continue;
           }
           fprintf(fileHandle, ">%s\n", sequenceHeader);
@@ -81,7 +78,7 @@ void getReferenceSequences(FILE *fileHandle, Flower *flower, char *name){
               free(cA);
           }
       }
-      //free(sequenceHeader);
+      free(sequenceHeader);
    }
    flower_destructSequenceIterator(seqIterator);
    return;
