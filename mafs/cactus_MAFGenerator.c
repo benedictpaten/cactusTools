@@ -32,6 +32,8 @@ static void usage() {
             stderr,
             "-g --referenceEventString : String identifying the reference event. This option will include a reference sequence in the blocks.\n");
     fprintf(stderr, "-h --help : Print this help screen\n");
+    fprintf(stderr,
+            "-i --showOnlySubstitutionsWithRespectToTheReference : Display only substitutions with respect to the reference.\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -43,6 +45,7 @@ int main(int argc, char *argv[]) {
     char * flowerName = NULL;
     char * outputFile = NULL;
     char *referenceEventString = (char *)cactusMisc_getDefaultReferenceEventHeader();
+    bool showOnlySubstitutionsWithRespectToTheReference = 0;
 
     ///////////////////////////////////////////////////////////////////////////
     // (0) Parse the inputs handed by genomeCactus.py / setup stuff.
@@ -54,11 +57,12 @@ int main(int argc, char *argv[]) {
                 0, 'c' }, { "flowerName", required_argument, 0, 'd' }, {
                 "outputFile", required_argument, 0, 'e' }, {
                 "referenceEventString", optional_argument, 0, 'g' }, { "help",
-                no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
+                no_argument, 0, 'h' },
+                { "showOnlySubstitutionsWithRespectToTheReference", no_argument, 0, 'i' }, { 0, 0, 0, 0 } };
 
         int option_index = 0;
 
-        int key = getopt_long(argc, argv, "a:c:d:e:g:h", long_options,
+        int key = getopt_long(argc, argv, "a:c:d:e:g:hi", long_options,
                 &option_index);
 
         if (key == -1) {
@@ -84,6 +88,9 @@ int main(int argc, char *argv[]) {
             case 'h':
                 usage();
                 return 0;
+            case 'i':
+                showOnlySubstitutionsWithRespectToTheReference = 1;
+                break;
             default:
                 usage();
                 return 1;
@@ -141,7 +148,11 @@ int main(int argc, char *argv[]) {
     }
     else {
         st_logInfo("Ordering by reference by string %s\n", referenceEventString);
-        getMAFsReferenceOrdered2(referenceEventString, flower, fileHandle, getMAFBlock);
+        if(showOnlySubstitutionsWithRespectToTheReference) {
+            getMAFsReferenceOrdered2(referenceEventString, flower, fileHandle, getMAFBlockShowingOnlySubstitutionsWithRespectToTheReference);
+        } else {
+            getMAFsReferenceOrdered2(referenceEventString, flower, fileHandle, getMAFBlock);
+        }
     }
     fclose(fileHandle);
     st_logInfo("Got the mafs in %i seconds/\n", time(NULL) - startTime);

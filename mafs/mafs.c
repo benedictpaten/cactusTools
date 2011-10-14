@@ -34,7 +34,32 @@ static char *formatSequenceHeader(Sequence *sequence) {
     }
 }
 
-static void getMAFBlockP2(Segment *segment, FILE *fileHandle) {
+static char *getSegmentStringShowingOnlySubstitutionsWithRespectToTheReference(Segment *segment) {
+    char *string = segment_getString(segment);
+    assert(string != NULL);
+    Block *block = segment_getBlock(segment);
+    Block_InstanceIterator *it = block_getInstanceIterator(block);
+    Segment *segment2;
+    while((segment2 = block_getNext(it)) != NULL) {
+        if(segment2 != segment && strcmp(cactusMisc_getDefaultReferenceEventHeader(), event_getHeader(segment_getEvent(segment2))) == 0) {
+            assert(segment != segment_getReverse(segment2));
+            char *string2 = segment_getString(segment2);
+            assert(string2 != NULL);
+            assert(strlen(string) == strlen(string2));
+            for(int32_t i=0; i<strlen(string); i++) {
+                if(string[i] == string2[i]) {
+                    string[i] = '*';
+                }
+            }
+            free(string2);
+            break;
+        }
+    }
+    block_destructInstanceIterator(it);
+    return string;
+}
+
+static void getMAFBlockP2(Segment *segment, FILE *fileHandle, char *(*getString)(Segment *segment)) {
     assert(segment != NULL);
     Sequence *sequence = segment_getSequence(segment);
     if (sequence != NULL) {
@@ -49,7 +74,7 @@ static void getMAFBlockP2(Segment *segment, FILE *fileHandle) {
         int32_t length = segment_getLength(segment);
         char *strand = segment_getStrand(segment) ? "+" : "-";
         int32_t sequenceLength = sequence_getLength(sequence);
-        char *instanceString = segment_getString(segment);
+        char *instanceString = getString(segment); //segment_getString(segment);
         fprintf(fileHandle, "s\t%s\t%i\t%i\t%s\t%i\t%s\n", sequenceHeader,
                 start, length, strand, sequenceLength, instanceString);
         free(instanceString);
@@ -57,12 +82,12 @@ static void getMAFBlockP2(Segment *segment, FILE *fileHandle) {
     }
 }
 
-static void getMAFBlockP(Segment *segment, FILE *fileHandle) {
+static void getMAFBlockP(Segment *segment, FILE *fileHandle, char *(*getString)(Segment *segment)) {
     int32_t i;
     for (i = 0; i < segment_getChildNumber(segment); i++) {
-        getMAFBlockP(segment_getChild(segment, i), fileHandle);
+        getMAFBlockP(segment_getChild(segment, i), fileHandle, getString);
     }
-    getMAFBlockP2(segment, fileHandle);
+    getMAFBlockP2(segment, fileHandle, getString);
 }
 
 static int32_t getNumberOnPositiveStrand(Block *block) {
@@ -80,7 +105,7 @@ static int32_t getNumberOnPositiveStrand(Block *block) {
     return i;
 }
 
-void getMAFBlock(Block *block, FILE *fileHandle) {
+static void getMAFBlock2(Block *block, FILE *fileHandle, char *(*getString)(Segment *segment)) {
     //void getMAFBlock(Block *block, FILE *fileHandle, ReferenceSequence *referenceSequence) {
     /*
      * Outputs a MAF representation of the block to the given file handle.
@@ -116,18 +141,26 @@ void getMAFBlock(Block *block, FILE *fileHandle) {
         //Now add the blocks in
         if (block_getRootInstance(block) != NULL) {
             assert(block_getRootInstance(block) != NULL);
-            getMAFBlockP(block_getRootInstance(block), fileHandle);
+            getMAFBlockP(block_getRootInstance(block), fileHandle, getString);
             fprintf(fileHandle, "\n");
         } else {
             Block_InstanceIterator *iterator = block_getInstanceIterator(block);
             Segment *segment;
             while ((segment = block_getNext(iterator)) != NULL) {
-                getMAFBlockP2(segment, fileHandle);
+                getMAFBlockP2(segment, fileHandle, getString);
             }
             block_destructInstanceIterator(iterator);
             fprintf(fileHandle, "\n");
         }
     }
+}
+
+void getMAFBlock(Block *block, FILE *fileHandle) {
+    getMAFBlock2(block, fileHandle, segment_getString);
+}
+
+void getMAFBlockShowingOnlySubstitutionsWithRespectToTheReference(Block *block, FILE *fileHandle) {
+    getMAFBlock2(block, fileHandle, getSegmentStringShowingOnlySubstitutionsWithRespectToTheReference);
 }
 
 void(*prepMafBlockFn)(Block *, FILE *);

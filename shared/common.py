@@ -62,9 +62,11 @@ def runCactusAdjacencyGraphViewer(graphFile,
     logger.info("Created a break point graph of the problem")
     
 def runCactusMAFGenerator(mAFFile, cactusDiskDatabaseString, flowerName="0",
-                          logLevel=None, referenceEventString=None):
+                          logLevel=None, referenceEventString=None, 
+                          showOnlySubstitutionsWithRespectToTheReference=None):
     logLevel = getLogLevelString2(logLevel)
     referenceEventString = nameValue("referenceEventString", referenceEventString, str)
-    system("cactus_MAFGenerator --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s %s" \
-            % (cactusDiskDatabaseString, flowerName, mAFFile, logLevel, referenceEventString))
+    showOnlySubstitutionsWithRespectToTheReference = nameValue("showOnlySubstitutionsWithRespectToTheReference", showOnlySubstitutionsWithRespectToTheReference, bool)
+    system("cactus_MAFGenerator --cactusDisk '%s' --flowerName %s --outputFile %s --logLevel %s %s %s" \
+            % (cactusDiskDatabaseString, flowerName, mAFFile, logLevel, referenceEventString, showOnlySubstitutionsWithRespectToTheReference))
     logger.info("Created a MAF for the given cactusDisk")

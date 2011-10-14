@@ -10,6 +10,8 @@
 
 void getMAFBlock(Block *block, FILE *fileHandle);
 
+void getMAFBlockShowingOnlySubstitutionsWithRespectToTheReference(Block *block, FILE *fileHandle);
+
 void getMAFsReferenceOrdered2(const char *referenceEventName, Flower *flower,
         FILE *fileHandle, void(*getMafBlockFn)(Block *, FILE *));
 
