@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <getopt.h>
+#include <ctype.h>
 
 #include "cactus.h"
 #include "avl.h"
@@ -47,7 +48,7 @@ static char *getSegmentStringShowingOnlySubstitutionsWithRespectToTheReference(S
             assert(string2 != NULL);
             assert(strlen(string) == strlen(string2));
             for(int32_t i=0; i<strlen(string); i++) {
-                if(string[i] == string2[i]) {
+                if(toupper(string[i]) == toupper(string2[i])) {
                     string[i] = '*';
                 }
             }
