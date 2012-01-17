@@ -222,9 +222,10 @@ static void flowerStats(Flower *flower, int32_t currentDepth,
         Group *group;
         int32_t i = 0;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-            assert(!group_isLeaf(group));
-            flowerStats(group_getNestedFlower(group), currentDepth + 1,
-                    children, tangleChildren, linkChildren, depths);
+            if(!group_isLeaf(group)) {
+                flowerStats(group_getNestedFlower(group), currentDepth + 1,
+                        children, tangleChildren, linkChildren, depths);
+            }
             if (group_getLink(group) != NULL) {
                 i++;
             }
@@ -278,10 +279,11 @@ void blockStats(Flower *flower, struct IntList *counts,
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-            assert(!group_isLeaf(group));
-            blockStats(group_getNestedFlower(group), counts, lengths, degrees,
-                    leafDegrees, coverage, leafCoverage, includeBlock,
-                    columnDegrees, columnLeafDegrees, perColumnStats);
+            if(!group_isLeaf(group)) {
+                blockStats(group_getNestedFlower(group), counts, lengths, degrees,
+                        leafDegrees, coverage, leafCoverage, includeBlock,
+                        columnDegrees, columnLeafDegrees, perColumnStats);
+            }
         }
         flower_destructGroupIterator(groupIterator);
         Flower_BlockIterator *blockIterator = flower_getBlockIterator(flower);
@@ -396,10 +398,11 @@ static void chainStats(Flower *flower, struct IntList *counts,
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-            assert(group_getNestedFlower(group) != NULL);
-            chainStats(group_getNestedFlower(group), counts, blockNumbers,
-                    baseBlockLengths, linkNumbers, avgInstanceBaseLengths,
-                    minNumberOfBlocksInChain);
+            if(group_getNestedFlower(group) != NULL) {
+                chainStats(group_getNestedFlower(group), counts, blockNumbers,
+                        baseBlockLengths, linkNumbers, avgInstanceBaseLengths,
+                        minNumberOfBlocksInChain);
+            }
         }
         flower_destructGroupIterator(groupIterator);
 
@@ -471,8 +474,9 @@ void terminalFlowerSizes(Flower *flower, struct IntList *sizes) {
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-            assert(!group_isLeaf(group));
-            terminalFlowerSizes(group_getNestedFlower(group), sizes);
+            if(!group_isLeaf(group)) {
+                terminalFlowerSizes(group_getNestedFlower(group), sizes);
+            }
         }
         flower_destructGroupIterator(groupIterator);
     }
@@ -545,11 +549,12 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
-            assert(group_getNestedFlower(group) != NULL);
-            totalGroups += netStats(group_getNestedFlower(group),
-                    totalEndNumbersPerTerminalGroup,
-                    totalNonFreeStubEndNumbersPerTerminalGroup, endDegrees,
-                    totalGroupsPerNet);
+            if(group_getNestedFlower(group) != NULL) {
+                totalGroups += netStats(group_getNestedFlower(group),
+                        totalEndNumbersPerTerminalGroup,
+                        totalNonFreeStubEndNumbersPerTerminalGroup, endDegrees,
+                        totalGroupsPerNet);
+            }
         }
         flower_destructGroupIterator(groupIterator);
         if (flower_getParentGroup(flower) != NULL) {
@@ -633,11 +638,12 @@ void faceStats(Flower *flower, struct IntList *numberPerGroup,
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
             //Call recursively..
-            assert(!group_isLeaf(group));
-            faceStats(group_getNestedFlower(group), numberPerGroup,
-                    cardinality, isSimple, isRegular, isCanonical,
-                    facesPerFaceAssociatedEnd, includeLinkGroups,
-                    includeTangleGroups);
+            if(!group_isLeaf(group)) {
+                faceStats(group_getNestedFlower(group), numberPerGroup,
+                        cardinality, isSimple, isRegular, isCanonical,
+                        facesPerFaceAssociatedEnd, includeLinkGroups,
+                        includeTangleGroups);
+            }
         }
         flower_destructGroupIterator(groupIterator);
     }
