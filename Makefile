@@ -2,7 +2,7 @@ rootPath = ./
 include ./include.mk
 
 # order is important, libraries first
-modules = genemap graphVizPlots mafs stats psls tuning beds referenceUtils 
+modules = traversal genemap graphVizPlots psls tuning beds stats mafs
 .PHONY: all %.all clean %.clean
 
 all : ${libPath}/cactusUtils.a ${modules:%=all.%}

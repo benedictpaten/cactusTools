@@ -17,7 +17,7 @@
 #include "avl.h"
 #include "commonC.h"
 #include "hashTableC.h"
-#include "cactusReference.h"
+#include "cactusTraversal.h"
 
 
 /*

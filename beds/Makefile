@@ -16,4 +16,4 @@ ${binPath}/cactus_chain: cactus_chain.c ${cactusLibPath}/cactusLib.a ${basicLibs
 
 clean :
 	rm -rf *.o
-	rm -rf ${binPath}/cactus_bedGenerator
+	rm -rf ${binPath}/cactus_bedGenerator ${binPath}/cactus_chain

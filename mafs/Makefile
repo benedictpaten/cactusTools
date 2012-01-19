@@ -12,8 +12,8 @@ ${binPath}/%: %
 	cp -f $< $@
 	chmod 775 $@
 
-${binPath}/cactus_MAFGenerator : *.c *.h ${cactusLibPath}/cactusReference.a ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
-	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_MAFGenerator cactus_MAFGenerator.c mafs.c ${cactusLibPath}/cactusReference.a ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
+${binPath}/cactus_MAFGenerator : *.c *.h ${libPath}/cactusTraversal.a ${cactusLibPath}/cactusLib.a ${basicLibsDependencies}
+	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_MAFGenerator cactus_MAFGenerator.c mafs.c ${libPath}/cactusTraversal.a ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
 
 ${binPath}/cactus_augmentedMaf :  *.c *.h ${libPath}/cactusUtils.h ${libPath}/cactusUtils.a cactus_augmentedMaf.c ${basicLibsDependencies}
 	${cxx} ${cflags} -I ${libPath} -o ${binPath}/cactus_augmentedMaf cactus_augmentedMaf.c ${libPath}/cactusUtils.a ${cactusLibPath}/cactusLib.a ${basicLibs}
