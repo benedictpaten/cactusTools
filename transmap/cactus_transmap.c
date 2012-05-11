@@ -47,10 +47,8 @@ static int32_t transmap_getTotalDistanceAtAdjacency(Cap * A) {
 	childA = flower_getCap(flower, cap_getName(A));
 	childB = flower_getCap(flower, cap_getName(B));
 
-#ifdef BEN_DEBUG
 	assert(childA);
 	assert(childB);
-#endif
 
 	return transmap_getTotalDistanceBetweenCaps(childA, childB);
 
@@ -111,11 +109,9 @@ static int32_t transmap_sampleOrderAndOrientationAtNestedFlower(Event * E, Cap *
 	childB = flower_getCap(flower, cap_getName(B));
 	childE = eventTree_getEvent(flower_getEventTree(flower), event_getName(E));
 
-#ifdef BEN_DEBUG
 	assert(childA);
 	assert(childB);
 	assert(childE);
-#endif
 
 	switch (transmap_sampleOrderAndOrientationAtEvent(childE, childA, childB, allowed_distance)) {
 	case true:
@@ -142,10 +138,8 @@ static int32_t transmap_goByAncestralPath(Face * face, Event * E) {
 		if (index == 0 || event_isAncestor(topEvent, tmpEvent))
 			topEvent = tmpEvent;
 
-#ifdef BEN_DEBUG
 		// Face should be canonical by now...
 		assert(face_getBottomNodeNumber(face, index) == 1);
-#endif
 
 		tmpEvent = cap_getEvent(face_getBottomNode(face, index, 0));
 		if (index == 0 || event_isAncestor(tmpEvent, bottomEvent))
@@ -274,32 +268,24 @@ static int32_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap
 		return false;
 
 	// Synchronicity
-#ifdef BEN_DEBUG
 	assert(event_isAncestor(cap_getEvent(A), E) 
 	       || event_isAncestor(E, cap_getEvent(A))
 	       || cap_getEvent(A) == E);
-#endif
 
 	if (event_isAncestor(cap_getEvent(A), E)) {
-#ifdef BEN_DEBUG
 		assert(cap_getSide(A));
 		assert(cap_getTopFace(A));
-#endif
 		face = cap_getTopFace(A);
 		for (index = 0; index < face_getCardinal(face); index++)
 			if (face_getTopNode(face, index) == cap_getPositiveOrientation(A))
 				break;
-#ifdef BEN_DEBUG
 		assert(index < face_getCardinal(face));
 		assert(face_getBottomNodeNumber(face, index) == 1);
-#endif
 		if (cap_getOrientation(A))
 			A = face_getBottomNode(face, index, 0);
 		else 
 			A = cap_getReverse(face_getBottomNode(face, index, 0));
-#ifdef BEN_DEBUG
 		assert(event_isAncestor(E, cap_getEvent(A)));
-#endif
 	} 
 
 	// Step Forward
@@ -317,9 +303,7 @@ static int32_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap
 			if (bottomCapNumber == 0)
 				return false;
 			else if (bottomCapNumber > 1) {
-#ifdef BEN_DEBUG
 				assert(transmap_findTopCap(E,A) == NULL);
-#endif
 				return false;
 			} else {
 				topCap = transmap_findTopCap(E,A);

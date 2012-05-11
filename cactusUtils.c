@@ -193,7 +193,9 @@ struct IntList *splitIntString(char *str, char *delim){
     int32_t i;
     tok = strtok(stString_copy(str), delim);
     while (tok != NULL){
-        assert( sscanf(tok, "%d", &i) == 1);
+        int j = sscanf(tok, "%d", &i);
+        (void)j;
+        assert(j == 1);
         intListAppend(list, i);
         tok = strtok(NULL, delim);
     }
