@@ -323,6 +323,9 @@ int32_t printThread( struct Thread *thread, FILE *fileHandle, char *query, char 
     if( strstr(thread->header, "NODE") != NULL ){//HACK for Velvet's contig headers
         strtok(stString_copy(thread->header), "_");
         qchr = strtok(NULL, "_");
+    }else if( strstr(thread->header, "Gi") != NULL &&  strstr(thread->header, "Ref") != NULL ){ // HACK ecoli 
+        strtok(stString_copy(thread->header), "_");
+        qchr = strtok(NULL, ".");
     }else{
         qchr = getCoor( thread->header, &start, &qchrsize );
     }

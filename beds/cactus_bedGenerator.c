@@ -227,7 +227,8 @@ void printThread( struct Thread *thread, FILE *fileHandle, int32_t level ){
     destructIntList(blockSizes);
     fprintf(fileHandle, " ");
     for(i=0; i< blockCount; i++){
-        fprintf(fileHandle, "%d,", blockStarts->list[i] );
+        //fprintf(fileHandle, "%d,", blockStarts->list[i] );
+        fprintf(fileHandle, "%d,", blockStarts->list[i] - blockStarts->list[0] );
     }
     destructIntList(blockStarts);
     fprintf(fileHandle, "\n");
@@ -245,7 +246,7 @@ void addSegmentToThread( struct Thread *thread, Segment *segment ){
 void addSegments( struct List *threads, Block *block, char *header, char *chainName ){
     //st_logInfo("\taddSegments, header %s, chain %s\n", header, chainName);
     Segment *segment;
-    //int32_t startTime;
+    int32_t startTime;
     struct Thread *thread = NULL;
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     while( (segment = block_getNext(it)) != NULL ){
@@ -266,7 +267,7 @@ void addSegments( struct List *threads, Block *block, char *header, char *chainN
                     thread = constructThread( seqHeader, chainName );
                     listAppend(threads, thread);
                 }
-               // startTime = time(NULL);
+                startTime = time(NULL);
                 addSegmentToThread( thread, segment );
                 //st_logInfo("addSegmentToThread in %i seconds/\n", time(NULL) - startTime);
             }
@@ -285,7 +286,7 @@ void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
     //st_logInfo("\tchainName: %s\n", chainName);
     
     //Get all the threads with eventHeader 'species'
-    //int32_t startTime = time(NULL);
+    int32_t startTime = time(NULL);
     struct List * threads = constructEmptyList(0, free);
     int32_t numBlocks;
     Block **blocks = chain_getBlockChain( chain, &numBlocks );
@@ -298,7 +299,7 @@ void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
     //st_logInfo("\t%d blocks; %d threads\n", numBlocks, threads->length);
 
     //Print the beds:
-    //startTime = time(NULL);
+    startTime = time(NULL);
     for( int32_t i = 0; i< threads->length; i++ ){
         struct Thread *thread = threads->list[i];
         printThread( thread, fileHandle, level );
@@ -315,19 +316,19 @@ void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
 void getBEDs(Flower *flower, FILE *fileHandle, char *species, int level){
     //st_logInfo("getBEDs, species %s\n", species);
     Chain *chain;
-    //int32_t startTime;
+    int32_t startTime;
     Flower_ChainIterator *chainIt = flower_getChainIterator( flower );
     
     //Get beds for chains at current level
     while( (chain = flower_getNextChain(chainIt)) != NULL ){
-        //startTime = time(NULL);
+        startTime = time(NULL);
         chain_getBEDs(chain, fileHandle, species, level);
         //st_logInfo("chain_getBEDs in %i seconds/\n", time(NULL) - startTime);
     }
     flower_destructChainIterator( chainIt );
 
     //Get beds for non-trivial chains:
-    //startTime = time(NULL);
+    startTime = time(NULL);
     Flower_BlockIterator *blockIt = flower_getBlockIterator( flower );
     Block *block;
     while( (block = flower_getNextBlock(blockIt) ) != NULL ){
@@ -342,7 +343,7 @@ void getBEDs(Flower *flower, FILE *fileHandle, char *species, int level){
     Flower_GroupIterator *groupIt = flower_getGroupIterator( flower );
     Group *group;
     level ++;
-    if (level > 5){ return; } // ONLY PRINT OUT THE FIRST 5 LEVEL BEDs
+    //if (level > 5){ return; } // ONLY PRINT OUT THE FIRST 5 LEVEL BEDs
     while( (group = flower_getNextGroup(groupIt) ) != NULL ){
         Flower *nestedFlower = group_getNestedFlower( group );
         if( nestedFlower != NULL ){

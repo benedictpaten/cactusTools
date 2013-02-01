@@ -47,7 +47,11 @@ class Chain:
             sizes.append( self.sizes[i] )
         self.starts = starts
         self.sizes = sizes
-         
+
+    def getStr(self):
+        starts = ",".join([str(s) for s in self.starts])
+        sizes = ",".join([str(s) for s in self.sizes])
+        return "%s %d %s %d %d %s %s %s" %(self.chr, self.chrsize, self.strand, self.start, self.end, self.id, starts, sizes)
 
 
 class Bed:
@@ -64,7 +68,11 @@ class Bed:
         for i in range(self.blockCount):
             self.blockSizes[i] = int(self.blockSizes[i])
             self.blockStarts[i] = int(self.blockStarts[i])
-    
+
+    def getStr(self):
+        blockSizes = ",".join( [ str(s) for s in self.blockSizes] )
+        blockStarts = ",".join( [ str(s) for s in self.blockStarts] )
+        return "%s %d %d %s %s %d %s %s" %(self.chr, self.start, self.end, self.name, self.strand, self.blockCount, blockSizes, blockStarts) 
 
 def readBeds(file):
     f = open(file, "r")
@@ -99,6 +107,8 @@ def checkChain(chain, beds):
                 if chain.starts[i] != bed.blockStarts[i]:
                     check = False
                     sys.stdout.write("Different blockStart, block %d, chainStart: %d, bedStart: %d\n" %(i, chain.starts[i], bed.blockStarts[i]))
+                    sys.stdout.write("Chain: %s\n" %chain.getStr())
+                    sys.stdout.write("Bed: %s\n" %bed.getStr())
                     continue
             return check
     sys.stdout.write("Could not find any bed with start %d\n" %(chain.start))
