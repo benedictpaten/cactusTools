@@ -71,7 +71,7 @@ void addBlockToGraph(Block *block, const char *colour, FILE *fileHandle) {
         segment = segment_getStrand(segment) ? segment : segment_getReverse(
                 segment);
         if (segment_getSequence(segment) != NULL) {
-            sprintf(label, "%s:%i:%i", cactusMisc_nameToStringStatic(
+            sprintf(label, "%s:%" PRIi64 ":%" PRIi64 "", cactusMisc_nameToStringStatic(
                     sequence_getName(segment_getSequence(segment))),
                     segment_getStart(segment), segment_getStart(segment)
                             + segment_getLength(segment));
@@ -104,7 +104,7 @@ void addChainsToGraph(Flower *flower, FILE *fileHandle) {
     Flower_ChainIterator *chainIterator = flower_getChainIterator(flower);
     Chain *chain;
     while ((chain = flower_getNextChain(chainIterator)) != NULL) {
-        int32_t i, j;
+        int64_t i, j;
         const char *chainColour;
         while ((chainColour = graphViz_getColour()) != NULL) { //ensure the chain colours don't match the trivial block chains and the adjacencies.
             if (strcmp(chainColour, "black") != 0
@@ -139,12 +139,12 @@ void addAdjacencies(Group *group, FILE *fileHandle) {
                 Cap *cap2 = cap_getAdjacency(cap);
                 if (!cap_getSide(cap)) {
                     assert(cap_getCoordinate(cap) < cap_getCoordinate(cap2));
-                    sprintf(label, "%s:%i:%i:%s:%i",
+                    sprintf(label, "%s:%" PRIi64 ":%" PRIi64 ":%s:%" PRIi64 "",
                             cactusMisc_nameToStringStatic(sequence_getName(
                                     cap_getSequence(cap))), cap_getCoordinate(
                                     cap), cap_getCoordinate(cap2), flowerName,
                             flower_getEndNumber(flower));
-                    //sprintf(label, "%s:%i",
+                    //sprintf(label, "%s:%" PRIi64 "",
                     //		flowerName,
                     //		flower_getEndNumber(flower));
                     addEdgeToGraph(cap_getEnd(cap), cap_getEnd(cap2), "grey",

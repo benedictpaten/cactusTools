@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
         }
     }
     fclose(fileHandle);
-    st_logInfo("Got the mafs in %i seconds/\n", time(NULL) - startTime);
+    st_logInfo("Got the mafs in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.

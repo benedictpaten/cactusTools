@@ -119,7 +119,7 @@ char *appendIntToName(char *name, int num){
     return newName;
 }
 
-int32_t getSeqLength(Flower *flower, char *header){
+int64_t getSeqLength(Flower *flower, char *header){
     Flower_SequenceIterator *it = flower_getSequenceIterator(flower);
     Sequence *sequence;
     while((sequence = flower_getNextSequence(it)) != NULL){
@@ -190,10 +190,10 @@ struct List *splitString(char *str, char *delim){
 struct IntList *splitIntString(char *str, char *delim){
     struct IntList *list = constructEmptyIntList(0);
     char *tok;
-    int32_t i;
+    int64_t i;
     tok = strtok(stString_copy(str), delim);
     while (tok != NULL){
-        int j = sscanf(tok, "%d", &i);
+        int j = sscanf(tok, "%" PRIi64, &i);
         (void)j;
         assert(j == 1);
         intListAppend(list, i);
@@ -207,7 +207,7 @@ char *str_joinList(struct List *strList, char *sep){
      *Return a concatenated string of a list of string, which separated by 'sep' 
      */
     if(strList->length == 0){return NULL;}
-    int32_t strLength = 0;
+    int64_t strLength = 0;
     for(int i=0; i < strList->length; i++){
         strLength += strlen(strList->list[i]);
     }

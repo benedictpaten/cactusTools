@@ -67,17 +67,17 @@
 struct bed{
     struct bed *next;
     char *chrom;
-    int32_t chromStart;
-    int32_t chromEnd;
+    int64_t chromStart;
+    int64_t chromEnd;
     char *name;
 
     int score;
     //char strand[2];
     char *strand;
-    int32_t thickStart;
-    int32_t thickEnd;
-    int32_t itemRgb;
-    int32_t blockCount;
+    int64_t thickStart;
+    int64_t thickEnd;
+    int64_t itemRgb;
+    int64_t blockCount;
     struct IntList *blockSizes;
     struct IntList *chromStarts;
 };
@@ -124,15 +124,15 @@ struct bed *bedLoadAll(char *fileName){
         }else{
 	    currbed = constructbed(); 
             currbed->chrom = stString_copy(lineList->list[0]);
-            assert( sscanf(lineList->list[1], "%d", &(currbed->chromStart)) == 1);
-            assert( sscanf(lineList->list[2], "%d", &(currbed->chromEnd)) == 1);
+            assert( sscanf(lineList->list[1], "%" PRIi64, &(currbed->chromStart)) == 1);
+            assert( sscanf(lineList->list[2], "%" PRIi64, &(currbed->chromEnd)) == 1);
             currbed->name = stString_copy(lineList->list[3]);
             assert( sscanf(lineList->list[4], "%d", &(currbed->score)) == 1);
             currbed->strand = stString_copy(lineList->list[5]);
-            assert( sscanf(lineList->list[6], "%d", &(currbed->thickStart)) == 1);
-            assert( sscanf(lineList->list[7], "%d", &(currbed->thickEnd)) == 1);
-            assert( sscanf(lineList->list[8], "%d", &(currbed->itemRgb)) == 1);
-            assert( sscanf(lineList->list[9], "%d", &(currbed->blockCount)) == 1);
+            assert( sscanf(lineList->list[6], "%" PRIi64, &(currbed->thickStart)) == 1);
+            assert( sscanf(lineList->list[7], "%" PRIi64, &(currbed->thickEnd)) == 1);
+            assert( sscanf(lineList->list[8], "%" PRIi64, &(currbed->itemRgb)) == 1);
+            assert( sscanf(lineList->list[9], "%" PRIi64, &(currbed->blockCount)) == 1);
             currbed->blockSizes = splitIntString(stString_copy(lineList->list[10]), ",");
 	    assert(currbed->blockSizes->length == currbed->blockCount);
             currbed->chromStarts = splitIntString(stString_copy(lineList->list[11]), ",");
@@ -163,14 +163,14 @@ struct MappedExon{
     int blockIndex;
     int status; //status = 1 if complete, 0 if incomplete, 3 if incomplete because of missing data
     char *chr;
-    int32_t start;
-    int32_t length;
-    int32_t exonStart;//block start relatively to the exon: exonStart = blockStart (5'end) - exonStart
-    int32_t exonEnd;//block end relatively to the exon: exonEnd = exonEnd - (blockStart + blockLength)
-    int32_t exonLength;
-    int32_t exonTotalLength;
-    int32_t insBases;
-    int32_t delBases;
+    int64_t start;
+    int64_t length;
+    int64_t exonStart;//block start relatively to the exon: exonStart = blockStart (5'end) - exonStart
+    int64_t exonEnd;//block end relatively to the exon: exonEnd = exonEnd - (blockStart + blockLength)
+    int64_t exonLength;
+    int64_t exonTotalLength;
+    int64_t insBases;
+    int64_t delBases;
     char strand; 
     char *seq;
     bool isLeftStub;
@@ -190,8 +190,8 @@ struct Gene{
 
 struct Exon{
     int id;
-    int32_t start;
-    int32_t end;
+    int64_t start;
+    int64_t end;
     int hasDup;
     struct List *ends;
 };
@@ -199,21 +199,21 @@ struct Exon{
 struct MappedEnd{
     Cap *cap;
     End *end;
-    int32_t exonStart; //block start relatively to the exon: = blockStart (5'end) - exonStart
-    int32_t exonEnd; //block start relatively to the exon: = exonEnd - (blockStart + blockLength)
+    int64_t exonStart; //block start relatively to the exon: = blockStart (5'end) - exonStart
+    int64_t exonEnd; //block start relatively to the exon: = exonEnd - (blockStart + blockLength)
 };
 
 struct CapList{
     Cap *cap;
-    int32_t endSeqCoor;
+    int64_t endSeqCoor;
     struct CapList *next;
     struct CapList *prev;
 };
 
 //============= CONSTRUCTOR ==============
-struct MappedExon *constructMappedExon(int exon, int32_t exonStart, char *chr, 
-    int32_t start, int32_t length, char strand, int blockIndex, char *seq, 
-    int32_t exonEnd, int32_t exonLength, int32_t exonTotalLength){
+struct MappedExon *constructMappedExon(int exon, int64_t exonStart, char *chr, 
+    int64_t start, int64_t length, char strand, int blockIndex, char *seq, 
+    int64_t exonEnd, int64_t exonLength, int64_t exonTotalLength){
     
     struct MappedExon *mexon = st_malloc(sizeof(struct MappedExon));
     mexon->exon = exon;
@@ -254,7 +254,7 @@ struct Gene *constructGene(char *name, char strand, int exonCount){
     return gene;
 }
 
-struct MappedEnd *constructMappedEnd(Cap *cap, End *end, int32_t exonStart, int32_t exonEnd){
+struct MappedEnd *constructMappedEnd(Cap *cap, End *end, int64_t exonStart, int64_t exonEnd){
     struct MappedEnd *me = st_malloc(sizeof(struct MappedEnd));
     me->end = end;
     me->cap = cap;
@@ -307,38 +307,38 @@ char *getChrom(char *name){
     }
 }
 
-int32_t getSeqStartFromName(char *name){
-    int32_t start = 0;
+int64_t getSeqStartFromName(char *name){
+    int64_t start = 0;
     struct List *list = splitString(name, ".");
     if(list->length >= 4){
-        sscanf(list->list[3], "%d", &start);
+        sscanf(list->list[3], "%" PRIi64, &start);
     }
     return start;
 }
 
-int32_t getSeqEndFromName(char *name){
-    int32_t start = 0;
-    int32_t length = 0;
+int64_t getSeqEndFromName(char *name){
+    int64_t start = 0;
+    int64_t length = 0;
     struct List *list = splitString(name, ".");
     assert(list->length >= 5);
-    sscanf(list->list[3], "%d", &start);
-    sscanf(list->list[4], "%d", &length);
+    sscanf(list->list[3], "%" PRIi64, &start);
+    sscanf(list->list[4], "%" PRIi64, &length);
     return start + length;
 }
 
-int32_t mapCapCoor2(Cap *cap, struct List *list){
-    int32_t start = 0;
+int64_t mapCapCoor2(Cap *cap, struct List *list){
+    int64_t start = 0;
     if(list->length >=4){
-        sscanf(list->list[3], "%d", &start);
+        sscanf(list->list[3], "%" PRIi64, &start);
     }
     return cap_getCoordinate(cap) - 2 + start;
 }
 
-int32_t mapCapCoor(Cap *cap){
+int64_t mapCapCoor(Cap *cap){
     //st_logInfo("mapCapCoor\n");
     char *seq = cap_getSequenceName(cap);
     struct List *list = splitString(seq, ".");
-    int32_t coor = mapCapCoor2(cap, list);
+    int64_t coor = mapCapCoor2(cap, list);
     //destructList(list);
     return coor;
 }
@@ -358,8 +358,8 @@ int capCmp(Cap *cap1, Cap *cap2){
     char *chr2 = list2->list[1];
     cmp = strcmp(chr1, chr2);//compare two chromosomes
     if(cmp == 0){//if same chromosome, compare the coordinates
-        int32_t coor1 = mapCapCoor2(cap1, list1);
-        int32_t coor2 = mapCapCoor2(cap2, list2);
+        int64_t coor1 = mapCapCoor2(cap1, list1);
+        int64_t coor2 = mapCapCoor2(cap2, list2);
         if(coor1 < coor2){
             cmp = -1;
         }else if(coor1 == coor2){
@@ -381,7 +381,7 @@ struct CapList *insertCapList(struct CapList *caplist, Cap *cap){
     struct CapList *new = constructCapList();
     new->cap = cap;
 
-    int32_t seqLen = getSeqLength(end_getFlower(cap_getEnd(cap)), cap_getSequenceName(cap));
+    int64_t seqLen = getSeqLength(end_getFlower(cap_getEnd(cap)), cap_getSequenceName(cap));
     new->endSeqCoor = mapCapCoor(cap) + seqLen + 1;    
     //st_logInfo("constructed 'NEW', capCoor = %d, mapCoor: %d, seqLen = %d, endSeqCoor = %d\n", cap_getCoordinate(cap), mapCapCoor(cap), seqLen, new->endSeqCoor);
 
@@ -488,15 +488,15 @@ int block_checkDuplication(Block *block){
 //Traverse the thread from inputed 'currCap' to find the Cap that is closest
 //and upstream (relative to the positive strand) to inputed 'start'
 
-Cap *walkDown(Cap *cap, int32_t start);
+Cap *walkDown(Cap *cap, int64_t start);
 
-Cap *walkUp(Cap *cap, int32_t start){
+Cap *walkUp(Cap *cap, int64_t start){
     assert(cap != NULL);
     Segment *segment = cap_getSegment(cap);
     if (segment != NULL) {
         Cap *otherCap = cap_getOtherSegmentCap(cap);
-        //int32_t otherCoor = cap_getCoordinate(otherCap); 
-        int32_t otherCoor = mapCapCoor(otherCap);
+        //int64_t otherCoor = cap_getCoordinate(otherCap); 
+        int64_t otherCoor = mapCapCoor(otherCap);
         if(otherCoor < start){//still upstream of 'start', walkDown (or cross)
             cap = walkDown(otherCap, start);
         }
@@ -517,17 +517,17 @@ Cap *walkUp(Cap *cap, int32_t start){
     return cap;
 }
 
-Cap *walkDown(Cap *cap, int32_t start){//cap is either stub or the 'otherSegmentCap'
+Cap *walkDown(Cap *cap, int64_t start){//cap is either stub or the 'otherSegmentCap'
     assert(cap != NULL);
-    //int32_t currcoor = cap_getCoordinate(cap);
-    int32_t currcoor = mapCapCoor(cap);
+    //int64_t currcoor = cap_getCoordinate(cap);
+    int64_t currcoor = mapCapCoor(cap);
     if(start <= currcoor){//current cap is already downstream of (or is at) 'start'
         return cap;
     }
 
     Cap *adjCap = cap_getAdjacency(cap);
-    //int32_t adjCoor = cap_getCoordinate(adjCap);
-    int32_t adjCoor = mapCapCoor(adjCap);
+    //int64_t adjCoor = cap_getCoordinate(adjCap);
+    int64_t adjCoor = mapCapCoor(adjCap);
 
     if(adjCoor <= start){//still upstream of 'coor', walk across
         cap = walkUp(adjCap, start);
@@ -547,7 +547,7 @@ Cap *walkDown(Cap *cap, int32_t start){//cap is either stub or the 'otherSegment
 
 
 //================ MAP GENE TO OTHER SPECIES (FINDING HOMOLOGS) ====================
-bool intListContains(struct IntList *list, int32_t num){
+bool intListContains(struct IntList *list, int64_t num){
     for(int i = 0; i < list->length; i++){
         if(list->list[i] == num){
             return true;
@@ -557,11 +557,11 @@ bool intListContains(struct IntList *list, int32_t num){
 }
 
 void extendMappedExon(struct List *mappedExons, Cap *cap, char *chr, int currBlockIndex, 
-                      int exon, int32_t exonStart, char *seqname, int exonEnd, int32_t exonTotalLength){
+                      int exon, int64_t exonStart, char *seqname, int exonEnd, int64_t exonTotalLength){
     char strand = cap_getStrand(cap) ? '+' : '-';
     struct MappedExon *mexon = NULL;
-    int32_t start = mapCapCoor(cap);
-    int32_t segmentLen = segment_getLength(cap_getSegment(cap));
+    int64_t start = mapCapCoor(cap);
+    int64_t segmentLen = segment_getLength(cap_getSegment(cap));
     int i = -1;
     for(i=0; i< mappedExons->length; i++){
         mexon = mappedExons->list[i];
@@ -618,7 +618,7 @@ struct List *exon_getCoverage(struct Exon *exon, char *species){
      */
     if (exon->ends == NULL || exon->ends->length == 0){return NULL;}
     struct List *mappedExons = constructEmptyList(0, free);
-    int32_t exonTotalLength = exon->end - exon->start;
+    int64_t exonTotalLength = exon->end - exon->start;
     for(int i=0; i< exon->ends->length; i++){//each cactusBlock that overlap with the exon, from left to right
         struct MappedEnd *mend = exon->ends->list[i];
         End_InstanceIterator *it = end_getInstanceIterator(mend->end);
@@ -714,7 +714,7 @@ struct MappedExon *insertMappedExon(struct MappedExon *root,  struct MappedExon 
 }
 
 //struct MappedExon *merge2MappedExons(struct MappedExon *curr, struct MappedExon *next, char strand, bool missingData){
-struct MappedExon *merge2MappedExons(struct MappedExon *curr, struct MappedExon *next, char strand, int32_t insBases, int32_t delBases){
+struct MappedExon *merge2MappedExons(struct MappedExon *curr, struct MappedExon *next, char strand, int64_t insBases, int64_t delBases){
     assert(curr != NULL && next != NULL);
     //assert(curr != NULL && next != NULL && curr->next == next);
     st_logInfo("Merge %d With %d; insBases = %d, delBases = %d\n", curr->start, next->start, insBases, delBases);
@@ -772,7 +772,7 @@ struct MappedExon *mergeIncompleteMappedExons(struct MappedExon *mexons){
     struct MappedExon *curr = mexons;
     struct MappedExon *next;
     struct MappedExon *root = mexons;
-    int32_t delBases, insBases;
+    int64_t delBases, insBases;
     
     //going from left to right, merge two neighbor incomplete mappedExons if
     //the incompleteness is caused by deletion/insertion of multiple of 3s
@@ -1000,8 +1000,8 @@ struct IntList *gene_findMissingDataExons(struct MappedExon *mexons){
 
 void correctForAltSplice(struct MappedExon *mexons){
     struct MappedExon *curr = mexons;
-    int32_t minExonLen;
-    int32_t alnBases;
+    int64_t minExonLen;
+    int64_t alnBases;
     while(curr != NULL){
         minExonLen = 0.9*curr->exonTotalLength;
         alnBases = curr->exonLength - curr->delBases;
@@ -1418,7 +1418,7 @@ bool checkPartialHomologyBackward(struct MappedExon *mexons, struct IntList *mis
 void printIntList(FILE *fileHandle, struct IntList *list){
     if(list == NULL){return;}
     for(int i=0; i< list->length; i++){
-        fprintf(fileHandle, "%d,", list->list[i]);
+        fprintf(fileHandle, "%" PRIi64 ",", list->list[i]);
     }
     //fprintf(fileHandle, "\n");
     return;
@@ -1463,7 +1463,7 @@ void convertExonIdOrder(struct IntList *mdexons, int max){
 
 bool mapGene(FILE *fileHandle, struct Gene *refgene, struct List *spcList){
     //fprintf(stderr, "GENE: %s\n", refgene->name);
-    fprintf(stdout, "\t<gene name=\"%s\" exonCount=\"%d\" strand=\"%c\">\n", refgene->name, refgene->exons->length, refgene->strand);
+    fprintf(stdout, "\t<gene name=\"%s\" exonCount=\"%" PRIi64 "\" strand=\"%c\">\n", refgene->name, refgene->exons->length, refgene->strand);
     
     //Intronic duplication
     fprintf(stdout, "\t\t<intronDups>");
@@ -1573,7 +1573,7 @@ bool mapGene(FILE *fileHandle, struct Gene *refgene, struct List *spcList){
             st_logInfo("\tExon: %d, Start: %d, end: %d, exonStart: %d, exonEnd: %d, blockIndex: %d, chr: %s, seq: %s, status: %d\n", 
                         e->exon, e->start, e->start + e->length, e->exonStart, e->exonEnd, e->blockIndex, e->chr, e->seq, e->status);
             int exonid = refgene->strand == '+' ? e->exon : refgene->exonCount - 1 - e->exon;
-            fprintf(stdout, "\t\t\t\t<exon id=\"%d\" status=\"%d\" strand=\"%c\" insBases=\"%d\" delBases=\"%d\"></exon>\n", exonid, e->status, e->strand, e->insBases, e->delBases);
+            fprintf(stdout, "\t\t\t\t<exon id=\"%d\" status=\"%d\" strand=\"%c\" insBases=\"%" PRIi64 "\" delBases=\"%" PRIi64 "\"></exon>\n", exonid, e->status, e->strand, e->insBases, e->delBases);
             //fprintf(stdout, "\t\t\t\t<exon id=\"%d\" status=\"%d\" strand=\"%c\"></exon>\n", e->exon, e->status, e->strand);
             e = e->next;
         }
@@ -1612,11 +1612,11 @@ bool mapGene(FILE *fileHandle, struct Gene *refgene, struct List *spcList){
 //of overlapped blocks. 
 //If hasDup is specified (not NULL), overlap_walkUp/Down only checks for and return
 //as soon as find any duplication within [start, end)
-Cap *overlap_walkDown(Cap *cap, int32_t start, int32_t end, struct Exon *exon, int *hasDup);
+Cap *overlap_walkDown(Cap *cap, int64_t start, int64_t end, struct Exon *exon, int *hasDup);
 
-Cap *overlap_walkUp(Cap *cap, int32_t start, int32_t end, struct Exon *exon, int *hasDup){
+Cap *overlap_walkUp(Cap *cap, int64_t start, int64_t end, struct Exon *exon, int *hasDup){
     assert((exon != NULL && hasDup == NULL) || (exon == NULL && hasDup != NULL));
-    int32_t coor = mapCapCoor(cap);
+    int64_t coor = mapCapCoor(cap);
     //st_logInfo("overlap_walkUp: cap %d, start %d, end %d\n", coor, start, end);
     if(end <= coor){//cases of missing data
         (*hasDup) = 0;
@@ -1634,8 +1634,8 @@ Cap *overlap_walkUp(Cap *cap, int32_t start, int32_t end, struct Exon *exon, int
             }//the whole region has some duplication, return
         }else{
             if(checkDup == 1){exon->hasDup = 1;}
-            int32_t exonStart = mapCapCoor(cap) - start; 
-            int32_t exonEnd = end - (mapCapCoor(cap) + segment_getLength(segment)); 
+            int64_t exonStart = mapCapCoor(cap) - start; 
+            int64_t exonEnd = end - (mapCapCoor(cap) + segment_getLength(segment)); 
             struct MappedEnd *mappedEnd = constructMappedEnd(cap, cap_getEnd(cap), exonStart, exonEnd);
             listAppend(exon->ends, mappedEnd);
         }
@@ -1657,9 +1657,9 @@ Cap *overlap_walkUp(Cap *cap, int32_t start, int32_t end, struct Exon *exon, int
     return cap;
 }
 
-Cap *overlap_walkDown(Cap *cap, int32_t start, int32_t end, struct Exon *exon, int *hasDup){
-    //int32_t coor = cap_getCoordinate(cap);
-    //int32_t coor = mapCapCoor(cap);
+Cap *overlap_walkDown(Cap *cap, int64_t start, int64_t end, struct Exon *exon, int *hasDup){
+    //int64_t coor = cap_getCoordinate(cap);
+    //int64_t coor = mapCapCoor(cap);
     //st_logInfo("overlap_walkDown: cap %d, start %d, end %d\n", coor, start, end);
     //assert(start <= coor && coor < end -1);
 
@@ -1679,8 +1679,8 @@ Cap *overlap_walkDown(Cap *cap, int32_t start, int32_t end, struct Exon *exon, i
 
 void mapGeneToRef(struct Gene *mg, Cap *cap, struct bed *gene){
     st_logInfo("mapGeneToRef: gene %s, startCap %d\n", gene->name, mapCapCoor(cap));
-    int32_t eStart, eEnd;
-    int32_t iStart, iEnd;
+    int64_t eStart, eEnd;
+    int64_t iStart, iEnd;
     struct Exon *exon;
 
     for(int i=0; i< gene->blockCount; i++){//each exon
@@ -1953,7 +1953,7 @@ int main(int argc, char *argv[]) {
    struct bed *gene = bedLoadAll(geneFile);
    mapGenes(flower, fileHandle, gene, species);
    fclose(fileHandle);
-   st_logInfo("Map genes in %i seconds/\n", time(NULL) - startTime);
+   st_logInfo("Map genes in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
    ///////////////////////////////////////////////////////////////////////////
    // Clean up.

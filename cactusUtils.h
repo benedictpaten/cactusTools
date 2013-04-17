@@ -54,7 +54,7 @@ char *appendIntToName(char *name, int num);
 /*
  *Return length of the sequence in flower whose name is header
  */
-int32_t getSeqLength(Flower *flower, char *header);
+int64_t getSeqLength(Flower *flower, char *header);
 
 /*
  *Move cap to the next block that its segment is adjacency to

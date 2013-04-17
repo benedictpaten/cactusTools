@@ -36,17 +36,17 @@
 struct bed{
     struct bed *next;
     char *chrom;
-    int32_t chromStart;
-    int32_t chromEnd;
+    int64_t chromStart;
+    int64_t chromEnd;
     char *name;
 
     int score;
     //char strand[2];
     char *strand;
-    int32_t thickStart;
-    int32_t thickEnd;
-    int32_t itemRgb;
-    int32_t blockCount;
+    int64_t thickStart;
+    int64_t thickEnd;
+    int64_t itemRgb;
+    int64_t blockCount;
     struct IntList *blockSizes;
     struct IntList *chromStarts;
 };
@@ -93,15 +93,15 @@ struct bed *bedLoadAll(char *fileName){
         }else{
 	    currbed = constructbed(); 
             currbed->chrom = stString_copy(lineList->list[0]);
-            assert( sscanf(lineList->list[1], "%d", &(currbed->chromStart)) == 1);
-            assert( sscanf(lineList->list[2], "%d", &(currbed->chromEnd)) == 1);
+            assert( sscanf(lineList->list[1], "%" PRIi64, &(currbed->chromStart)) == 1);
+            assert( sscanf(lineList->list[2], "%" PRIi64, &(currbed->chromEnd)) == 1);
             currbed->name = stString_copy(lineList->list[3]);
             assert( sscanf(lineList->list[4], "%d", &(currbed->score)) == 1);
             currbed->strand = stString_copy(lineList->list[5]);
-            assert( sscanf(lineList->list[6], "%d", &(currbed->thickStart)) == 1);
-            assert( sscanf(lineList->list[7], "%d", &(currbed->thickEnd)) == 1);
-            assert( sscanf(lineList->list[8], "%d", &(currbed->itemRgb)) == 1);
-            assert( sscanf(lineList->list[9], "%d", &(currbed->blockCount)) == 1);
+            assert( sscanf(lineList->list[6], "%" PRIi64, &(currbed->thickStart)) == 1);
+            assert( sscanf(lineList->list[7], "%" PRIi64, &(currbed->thickEnd)) == 1);
+            assert( sscanf(lineList->list[8], "%" PRIi64, &(currbed->itemRgb)) == 1);
+            assert( sscanf(lineList->list[9], "%" PRIi64, &(currbed->blockCount)) == 1);
             currbed->blockSizes = splitIntString(stString_copy(lineList->list[10]), ",");
 	    assert(currbed->blockSizes->length == currbed->blockCount);
             currbed->chromStarts = splitIntString(stString_copy(lineList->list[11]), ",");
@@ -166,7 +166,7 @@ int mapGene(Cap *cap, int level, int exon, struct bed *gene, FILE *fileHandle){
     *exons of input gene. Report chain relations of these regions with the exons.
     *cap: current cap. Level = chain level. exon = exon number. gene = bed record of gene
     */
-   int32_t exonStart, exonEnd;
+   int64_t exonStart, exonEnd;
    if(isStubCap(cap)){
       Group *group = end_getGroup(cap_getEnd(cap));
       Flower *nestedFlower = group_getNestedFlower(group);
@@ -181,7 +181,7 @@ int mapGene(Cap *cap, int level, int exon, struct bed *gene, FILE *fileHandle){
 
    cap = cap_getAdjacency(cap);
    Cap *nextcap;
-   int32_t capCoor;
+   int64_t capCoor;
    exonStart = gene->chromStarts->list[exon] + gene->chromStart;
    exonEnd = exonStart + gene->blockSizes->list[exon];
    Block *block = end_getBlock(cap_getEnd(cap));  
@@ -207,7 +207,7 @@ int mapGene(Cap *cap, int level, int exon, struct bed *gene, FILE *fileHandle){
          if(exon < gene->blockCount){
             exonStart = gene->chromStarts->list[exon] + gene->chromStart;
             exonEnd = exonStart + gene->blockSizes->list[exon];
-            fprintf(fileHandle, "\t\t<exon id=\"%d\" start=\"%d\" end=\"%d\">\n", exon, exonStart, exonEnd);
+            fprintf(fileHandle, "\t\t<exon id=\"%d\" start=\"%" PRIi64 "\" end=\"%" PRIi64 "\">\n", exon, exonStart, exonEnd);
          }
       }else{//current exon overlaps with current block Or with lower level flower
          Cap *oppcap = cap_getOtherSegmentCap(cap);
@@ -221,7 +221,7 @@ int mapGene(Cap *cap, int level, int exon, struct bed *gene, FILE *fileHandle){
 	       if(exon < gene->blockCount){
 		  exonStart = gene->chromStarts->list[exon] + gene->chromStart;
 		  exonEnd = exonStart + gene->blockSizes->list[exon];
-		  fprintf(fileHandle, "\t\t<exon id=\"%d\" start=\"%d\" end=\"%d\">\n", exon, exonStart, exonEnd);
+		  fprintf(fileHandle, "\t\t<exon id=\"%d\" start=\"%" PRIi64 "\" end=\"%" PRIi64 "\">\n", exon, exonStart, exonEnd);
 	       }
                continue;
             }
@@ -294,9 +294,9 @@ void mapGenes(Flower *flower, FILE *fileHandle, struct bed *gene, char *species)
           startCap = capList->list[i];
           st_logInfo("Cap %d, %s\n", i, cactusMisc_nameToString(cap_getName(startCap)));
 	  //Traverse cactus and get regions that overlap with exons of the gene, report the involved chains relations
-	  fprintf(fileHandle, "\t<gene name=\"%s\" target=\"%s\" start=\"%d\" end=\"%d\" exonCount=\"%d\" strand=\"%c\">\n", 
+	  fprintf(fileHandle, "\t<gene name=\"%s\" target=\"%s\" start=\"%" PRIi64 "\" end=\"%" PRIi64 "\" exonCount=\"%" PRIi64 "\" strand=\"%c\">\n",
                                  gene->name, species, gene->chromStart, gene->chromEnd, gene->blockCount, gene->strand[0]);
-	  fprintf(fileHandle, "\t\t<exon id=\"0\" start=\"%d\" end=\"%d\">\n", 
+	  fprintf(fileHandle, "\t\t<exon id=\"0\" start=\"%" PRIi64 "\" end=\"%" PRIi64 "\">\n",
                                  gene->chromStart, gene->chromStart + gene->blockSizes->list[0]);
 	  
           mapGene(startCap, level, 0, gene, fileHandle);
@@ -428,7 +428,7 @@ int main(int argc, char *argv[]) {
    struct bed *gene = bedLoadAll(geneFile);
    mapGenes(flower, fileHandle, gene, species);
    fclose(fileHandle);
-   st_logInfo("Map genes in %i seconds/\n", time(NULL) - startTime);
+   st_logInfo("Map genes in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
    ///////////////////////////////////////////////////////////////////////////
    // Clean up.

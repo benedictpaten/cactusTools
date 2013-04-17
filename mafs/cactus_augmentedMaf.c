@@ -24,10 +24,10 @@
 struct MafSegment {
     Segment *segment;
     char *name;
-    int32_t srcSize;
-    int32_t insertSize; //size of the insert between previous block and current block if there is any
-    int32_t gapSize; //size of the deletion between previous block and current block if there is any
-    int32_t gapStart;
+    int64_t srcSize;
+    int64_t insertSize; //size of the insert between previous block and current block if there is any
+    int64_t gapSize; //size of the deletion between previous block and current block if there is any
+    int64_t gapStart;
     char strand;
     bool empty; //(white space)
     bool unAligned; //double line
@@ -58,8 +58,8 @@ void destructMafSegment(struct MafSegment *ms){
 }
 
 //=================
-int32_t getSrcSize(Segment *segment){
-    int32_t srcSize = 0;
+int64_t getSrcSize(Segment *segment){
+    int64_t srcSize = 0;
     if(segment != NULL){
 	Sequence *sequence = segment_getSequence(segment);
 	assert(sequence != NULL);
@@ -75,8 +75,8 @@ char *getSegmentName(Segment *segment){
 }
 
 //========================
-int32_t getSegmentStart(Segment *segment){
-    int32_t start = -1;
+int64_t getSegmentStart(Segment *segment){
+    int64_t start = -1;
     Sequence *sequence = segment_getSequence(segment);
     if (sequence != NULL) {
         if (segment_getStrand(segment)) {
@@ -89,7 +89,7 @@ int32_t getSegmentStart(Segment *segment){
     return start;
 }
 
-bool checkContinuity(struct MafSegment *ms1, struct MafSegment *ms2, int32_t gapSize){
+bool checkContinuity(struct MafSegment *ms1, struct MafSegment *ms2, int64_t gapSize){
     /*
      * Return true if ms1 and ms2 have same strand and:
      *[ms1Start-ms1End](abuts)[ms2Start-ms2End]  or [ms2S-ms2E][ms1S-ms2E]
@@ -105,10 +105,10 @@ bool checkContinuity(struct MafSegment *ms1, struct MafSegment *ms2, int32_t gap
     char strand1 = segment_getStrand(ms1->segment) ? '+' : '-';
     char strand2 = segment_getStrand(ms2->segment) ? '+' : '-';
     if(strand1 == strand2){
-        int32_t start1 = getSegmentStart(ms1->segment);
-        int32_t end1 = start1 + segment_getLength(ms1->segment);
-        int32_t start2 = getSegmentStart(ms2->segment);
-        //int32_t end2 = start2 + segment_getLength(ms2->segment);
+        int64_t start1 = getSegmentStart(ms1->segment);
+        int64_t end1 = start1 + segment_getLength(ms1->segment);
+        int64_t start2 = getSegmentStart(ms2->segment);
+        //int64_t end2 = start2 + segment_getLength(ms2->segment);
         //if(start2 == end1 || start1 == end2){
         //if((strand1 == '+' && end1 + gapSize == start2) || //  |--ms1-->|---ms2---> 
         //   (strand1 == '-' && end2 + gapSize == start1)){  //  <--ms1---|<--ms2----|
@@ -126,7 +126,7 @@ struct IntList *getRefMatchedColumns(struct List *refrow, Block *block){
     assert(refrow->list != NULL);
     assert(block != NULL);
     struct IntList *indexList = constructEmptyIntList(0);
-    int32_t i;
+    int64_t i;
     for (i = 0; i< refrow->length; i++){
         struct MafSegment *refms = refrow->list[i];
         Segment *segment = refms->segment;
@@ -140,10 +140,10 @@ struct IntList *getRefMatchedColumns(struct List *refrow, Block *block){
     return indexList;
 }
 
-struct List *getInitializedRow(int32_t length){
+struct List *getInitializedRow(int64_t length){
     //create a list of length 'length' of MafSegments (a row)
     struct List *row = constructEmptyList(0, free);
-    for(int32_t i =0; i< length; i++){
+    for(int64_t i =0; i< length; i++){
         struct MafSegment *mafSegment = constructMafSegment( NULL );
         if (i >= 1){
             struct MafSegment *prevms = row->list[i-1];
@@ -155,7 +155,7 @@ struct List *getInitializedRow(int32_t length){
     return row;
 }
 
-bool checkInsert(struct List *row, int32_t c, struct IntList *prevCols, int32_t insertSize){
+bool checkInsert(struct List *row, int64_t c, struct IntList *prevCols, int64_t insertSize){
     /*
      *c = index of the 'matched' cell of current segment(base 1)
      *prevCols = indices of 'matched' cells of previous segment (that
@@ -165,7 +165,7 @@ bool checkInsert(struct List *row, int32_t c, struct IntList *prevCols, int32_t 
      *returns true. Otherwise return false.
      */
     struct MafSegment *leftms, *rightms;
-    int32_t i, pc, left, right;
+    int64_t i, pc, left, right;
     for(i = 0; i < prevCols->length; i++){
         pc = prevCols->list[i]; //previous column
         //if (c*pc > 0 && c == pc+1 ){ //Insertion. Note: if there is an insertion right before inversion, ignore
@@ -191,14 +191,14 @@ bool checkInsert(struct List *row, int32_t c, struct IntList *prevCols, int32_t 
     return false;
 }
 
-//void fillInDoubleLine(struct List *row, int32_t c, struct IntList *prevCols, 
-//                      int32_t gapStart, int32_t gapSize){
-void fillInDoubleLine(struct List *row, int32_t c, struct IntList *prevCols, 
-                      int32_t gapSize){
+//void fillInDoubleLine(struct List *row, int64_t c, struct IntList *prevCols, 
+//                      int64_t gapStart, int64_t gapSize){
+void fillInDoubleLine(struct List *row, int64_t c, struct IntList *prevCols, 
+                      int64_t gapSize){
     assert(row != NULL && row->length >= c);
     bool hasDoubleline;
-    int32_t pc, i, j;
-    int32_t left, right;
+    int64_t pc, i, j;
+    int64_t left, right;
     struct MafSegment * ms, *leftms, *rightms;
 
     for(i = 0; i< prevCols->length; i++){
@@ -219,7 +219,7 @@ void fillInDoubleLine(struct List *row, int32_t c, struct IntList *prevCols,
             if(strcmp(leftms->name, rightms->name) != 0){continue;} //030111
             if (!checkContinuity(leftms, rightms, gapSize)){continue;}
 
-            //st_logInfo("checkingDoubleLine: pc: %d, c: %d, left: %d, right: %d\n", pc, c, left, right);
+            //st_logInfo("checkingDoubleLine: pc: %" PRIi64 ", c: %" PRIi64 ", left: %" PRIi64 ", right: %" PRIi64 "\n", pc, c, left, right);
             hasDoubleline = true;
             for(j= left+1; j < right; j++){//all cells in between pc and c must be gaps
                 ms = row->list[j];
@@ -249,7 +249,7 @@ void fillInDoubleLine(struct List *row, int32_t c, struct IntList *prevCols,
 
 bool hasInsert(struct IntList *insertSizes){
     bool check = false;
-    for(int32_t i=0; i< insertSizes->length; i++){
+    for(int64_t i=0; i< insertSizes->length; i++){
         if(insertSizes->list[i] > 0){
 	    check = true;
             break;
@@ -258,7 +258,7 @@ bool hasInsert(struct IntList *insertSizes){
     return check;
 }
 
-void fillInDeletion(struct List *refrow, struct List *row, int32_t c, struct IntList *prevCols){
+void fillInDeletion(struct List *refrow, struct List *row, int64_t c, struct IntList *prevCols){
     /*
      * If there exists a column pc in prevCols so that pc + 1 < c and
      * [pc+1, c-1] are empty cells, then we mark those cells as a deletion
@@ -266,9 +266,9 @@ void fillInDeletion(struct List *refrow, struct List *row, int32_t c, struct Int
      */
     assert(row != NULL && row->length >= c);
     bool hasDeletion;
-    int32_t pc, i, j;
-    int32_t left, right;
-    int32_t gapSize = 0;
+    int64_t pc, i, j;
+    int64_t left, right;
+    int64_t gapSize = 0;
     struct MafSegment *ms, *refms, *leftms, *rightms;
 
     for(i = 0; i< prevCols->length; i++){
@@ -290,7 +290,7 @@ void fillInDeletion(struct List *refrow, struct List *row, int32_t c, struct Int
             if(leftms->segment == NULL || rightms->segment == NULL){continue;}
             if(strcmp(leftms->name, rightms->name) != 0){continue;}//030111
             
-            //st_logInfo("checkingDeletion: pc: %d, c: %d, pc*c: %d, left: %d, right: %d\n", pc, c, pc*c, left, right);
+            //st_logInfo("checkingDeletion: pc: %" PRIi64 ", c: %" PRIi64 ", pc*c: %" PRIi64 ", left: %" PRIi64 ", right: %" PRIi64 "\n", pc, c, pc*c, left, right);
             hasDeletion = true;
             for(j= left+1; j < right; j++){//all cells in between pc and c must be gaps
                 ms = row->list[j];
@@ -348,8 +348,8 @@ void addMafSegment(struct MafSegment *ms, Segment *segment){
     return;
 }
 
-int32_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow, 
-                         char *refname, int32_t prevUnaligned, Cap *prevCap){
+int64_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow, 
+                         char *refname, int64_t prevUnaligned, Cap *prevCap){
     Segment *segment = cap_getSegment(cap);
     Block *block = segment_getBlock(segment);
 
@@ -357,16 +357,16 @@ int32_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow,
     bool isAligned = block_hasRef(block, refname);
 
     struct IntList *cols = getRefMatchedColumns(refrow, block);
-    //st_logInfo("Number of matched columns: %d\n", cols->length);
+    //st_logInfo("Number of matched columns: %" PRIi64 "\n", cols->length);
 
     struct List *r;
-    int32_t c, i, j;
-    //int32_t insert;
+    int64_t c, i, j;
+    //int64_t insert;
     struct MafSegment *mafsegment;
     struct IntList *prevCols = NULL;
     Segment *prevSegment = NULL;
  
-    //st_logInfo("putSegmentToCell: %d, segmentLength: %d, prevUnaligned: %d\n",
+    //st_logInfo("putSegmentToCell: %" PRIi64 ", segmentLength: %" PRIi64 ", prevUnaligned: %" PRIi64 "\n",
     //          cap_getCoordinate(cap), segment_getLength(segment), prevUnaligned);
 
     if (cols->length > 0){//has matched columns
@@ -400,7 +400,7 @@ int32_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow,
 	    }
 	    if(needNewRow){//haven't found a cell for segment yet
                 r = getInitializedRow(refrow->length);
-                st_logInfo("Adding row #%d, length %d\n", rows->length, r->length);
+                st_logInfo("Adding row #%" PRIi64 ", length %" PRIi64 "\n", rows->length, r->length);
 
 		mafsegment = r->list[c];
                 addMafSegment(mafsegment, segment2);
@@ -422,7 +422,7 @@ int32_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow,
                 if( prevUnaligned == 0){//check for deletion
                     fillInDeletion(refrow, r, cols->list[i], prevCols);
                 }else if(!hasInsert){//doubleLine
-                    //int32_t gapStart = getSegmentStart(prevSegment) + segment_getLength(prevSegment);
+                    //int64_t gapStart = getSegmentStart(prevSegment) + segment_getLength(prevSegment);
                     //fillInDoubleLine(r, cols->list[i], prevCols, gapStart, prevUnaligned);
                     fillInDoubleLine(r, cols->list[i], prevCols, prevUnaligned);
                 }
@@ -439,15 +439,15 @@ int32_t putSegmentToCell(Cap *cap, struct List *rows, struct List *refrow,
     }else{//current segment does not algin to anywhere on the refrence spc
         prevUnaligned += segment_getLength(segment);
     }
-    //st_logInfo(", newUnaligned %d\n", prevUnaligned);
+    //st_logInfo(", newUnaligned %" PRIi64 "\n", prevUnaligned);
     return prevUnaligned;
 }
 
-void walkDown(Cap *cap, struct List *rows, struct List *refrow, char *refname, int32_t prevUnaligned, Cap *prevCap);
+void walkDown(Cap *cap, struct List *rows, struct List *refrow, char *refname, int64_t prevUnaligned, Cap *prevCap);
 
-void walkUp(Cap *cap, struct List *rows, struct List *refrow, char *refname, int32_t prevUnaligned, Cap *prevCap) {
+void walkUp(Cap *cap, struct List *rows, struct List *refrow, char *refname, int64_t prevUnaligned, Cap *prevCap) {
     assert(cap != NULL);
-    //st_logInfo("walkUp: %d, %s\n", cap_getCoordinate(cap), cactusMisc_nameToString(cap_getName(cap)));
+    //st_logInfo("walkUp: %" PRIi64 ", %s\n", cap_getCoordinate(cap), cactusMisc_nameToString(cap_getName(cap)));
 
     Segment *segment = cap_getSegment(cap);
     if (segment != NULL) {
@@ -473,9 +473,9 @@ void walkUp(Cap *cap, struct List *rows, struct List *refrow, char *refname, int
     }
 }
 
-void walkDown(Cap *cap, struct List *rows, struct List *refrow, char *refname, int32_t prevUnaligned, Cap *prevCap) {
+void walkDown(Cap *cap, struct List *rows, struct List *refrow, char *refname, int64_t prevUnaligned, Cap *prevCap) {
     assert(cap != NULL);
-    //st_logInfo("walkDown: %d\n", cap_getCoordinate(cap));
+    //st_logInfo("walkDown: %" PRIi64 "\n", cap_getCoordinate(cap));
     //assert(end_isAttached(end));
     Group *group = end_getGroup(cap_getEnd(cap));
     if (group_isLeaf(group)) { //Walk across
@@ -494,9 +494,9 @@ void walkDown(Cap *cap, struct List *rows, struct List *refrow, char *refname, i
 void fillInEmptyCells(struct List *threadRows, struct List *refRow){
     struct MafSegment *rms;
     struct MafSegment *ms;
-    for(int32_t j = 0; j < threadRows->length; j++){
+    for(int64_t j = 0; j < threadRows->length; j++){
         struct List *row = threadRows->list[j];
-        for(int32_t i = 0; i< refRow->length; i++){
+        for(int64_t i = 0; i< refRow->length; i++){
 	    assert(refRow->length == row->length);
 	    ms = row->list[i];
 	    if(ms->segment == NULL && ms->gapSize == 0){
@@ -521,8 +521,8 @@ struct List *getRows(Flower *flower, char *name, struct List *refRows, char *ref
     
     for(i = 0; i < refRows->length; i++){//for each row of the reference species
         refRow = refRows->list[i];
-        st_logInfo("\tGetting rows for source species %s that map to refRow %d\n", name, i);   
-        st_logInfo("refRow Length: %d\n", refRow->length);
+        st_logInfo("\tGetting rows for source species %s that map to refRow %" PRIi64 "\n", name, i);
+        st_logInfo("refRow Length: %" PRIi64 "\n", refRow->length);
 
         //Get the starts of all the threads of current species
         //struct List *startCaps = getLeftThreadStarts(name, refRow);
@@ -533,7 +533,7 @@ struct List *getRows(Flower *flower, char *name, struct List *refRows, char *ref
         struct List *rows = constructEmptyList(0, free);
         for(j = 0; j < startCaps->length; j++){//each thread in the current species
             cap = startCaps->list[j];
-            st_logInfo("\nCap %d: %s, sequence %s, coor: %d\n", j, cactusMisc_nameToString(cap_getName(cap)), 
+            st_logInfo("\nCap %" PRIi64 ": %s, sequence %s, coor: %" PRIi64 "\n", j, cactusMisc_nameToString(cap_getName(cap)),
                                                             cap_getSequenceName(cap), cap_getCoordinate(cap));
             walkDown(cap, rows, refRow, refname, 0, NULL);
         }
@@ -546,7 +546,7 @@ struct List *getRows(Flower *flower, char *name, struct List *refRows, char *ref
         //destructList(startCaps);
         fillInEmptyCells(rows, refRow);
         listAppend(rowsList, rows);    
-        st_logInfo("\tDone getting rows for %s, refRow %d. Number of rows: %d\n", name, i, rows->length);
+        st_logInfo("\tDone getting rows for %s, refRow %" PRIi64 ". Number of rows: %" PRIi64 "\n", name, i, rows->length);
     }
     return rowsList;
 }
@@ -556,7 +556,7 @@ void refWalkDown(Cap *cap, struct List *row);
 
 void refWalkUp(Cap *cap, struct List *row) {
     assert(cap != NULL);
-    st_logInfo("refWalkUp, cap %d, seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
+    st_logInfo("refWalkUp, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
     Segment *segment = cap_getSegment(cap);
     if (segment != NULL) {
         struct MafSegment *mafSegment = constructMafSegment( segment );
@@ -568,7 +568,7 @@ void refWalkUp(Cap *cap, struct List *row) {
             mafSegment->prev = prevMs;
         }
         listAppend(row, mafSegment);
-        st_logInfo("\totherSegmentCap, cap %d, seq: %s\n", cap_getCoordinate(cap_getOtherSegmentCap(cap)), cap_getSequenceName(cap_getOtherSegmentCap(cap)));
+        st_logInfo("\totherSegmentCap, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(cap_getOtherSegmentCap(cap)), cap_getSequenceName(cap_getOtherSegmentCap(cap)));
         refWalkDown(cap_getOtherSegmentCap(cap), row);
     } else {
         //assert(end_isAttached(end));
@@ -578,7 +578,7 @@ void refWalkUp(Cap *cap, struct List *row) {
             if(cap_getStrand(cap) != cap_getStrand(upperCap)){
                 upperCap = cap_getReverse(upperCap);
             }
-            st_logInfo("\tupperCap, cap %d, seq: %s\n", cap_getCoordinate(upperCap), cap_getSequenceName(upperCap));
+            st_logInfo("\tupperCap, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(upperCap), cap_getSequenceName(upperCap));
             refWalkUp(upperCap, row);
         }
     }
@@ -586,12 +586,12 @@ void refWalkUp(Cap *cap, struct List *row) {
 
 void refWalkDown(Cap *cap, struct List *row) {
     assert(cap != NULL);
-    st_logInfo("refWalkDown, cap %d, seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
+    st_logInfo("refWalkDown, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
     //assert(end_isAttached(end));
     Group *group = end_getGroup(cap_getEnd(cap));
     if (group_isLeaf(group)) { //Walk across
         cap = cap_getAdjacency(cap);
-        st_logInfo("\tadjCap, cap %d, seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
+        st_logInfo("\tadjCap, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(cap), cap_getSequenceName(cap));
         //Now walk up
         refWalkUp(cap, row);
     } else { //Walk down
@@ -599,7 +599,7 @@ void refWalkDown(Cap *cap, struct List *row) {
         if(cap_getStrand(cap) != cap_getStrand(lowerCap)){
             lowerCap = cap_getReverse(lowerCap);
         }
-        st_logInfo("\tlowerCap, cap %d, seq: %s\n", cap_getCoordinate(lowerCap), cap_getSequenceName(lowerCap));
+        st_logInfo("\tlowerCap, cap %" PRIi64 ", seq: %s\n", cap_getCoordinate(lowerCap), cap_getSequenceName(lowerCap));
         refWalkDown(lowerCap, row);
     }
 }
@@ -625,7 +625,7 @@ struct List *getReferenceRows(Flower *flower, char *name){
 }
 
 //================= PRINT MAF FOR EACH BLOCK ==================
-char getLeftInfo(struct MafSegment *ms, int *count){
+char getLeftInfo(struct MafSegment *ms, int64_t *count){
     assert(ms != NULL);
     char status;
     
@@ -658,7 +658,7 @@ char getLeftInfo(struct MafSegment *ms, int *count){
     return status;
 }
 
-char getRightInfo(struct MafSegment *rightms, int *count){
+char getRightInfo(struct MafSegment *rightms, int64_t *count){
     char status;
     
     if(rightms == NULL){//start new sequence (or blue bar)
@@ -686,20 +686,20 @@ char getRightInfo(struct MafSegment *rightms, int *count){
 void printIrow(struct MafSegment *ms, char *name, FILE *fh){
     assert(ms->segment != NULL);
     char leftStatus;
-    int32_t leftCount = 0;
+    int64_t leftCount = 0;
     char rightStatus;
-    int32_t rightCount = 0;
+    int64_t rightCount = 0;
     leftStatus = getLeftInfo( ms, &leftCount);
     rightStatus = getRightInfo( ms->next, &rightCount);
-    fprintf(fh, "i\t%s\t%c\t%d\t%c\t%d\n", name, leftStatus, leftCount,
+    fprintf(fh, "i\t%s\t%c\t%" PRIi64 "\t%c\t%" PRIi64 "\n", name, leftStatus, leftCount,
                                            rightStatus, rightCount);
     return;
 }
 
 void printErow(struct MafSegment *ms, char *name, FILE *fh){
-    int32_t count = 0;
+    int64_t count = 0;
     char status = getRightInfo(ms, &count);
-    fprintf(fh, "e\t%s\t%d\t%d\t%c\t%d\t%c\n", name, ms->gapStart, ms->gapSize,
+    fprintf(fh, "e\t%s\t%" PRIi64 "\t%" PRIi64 "\t%c\t%" PRIi64 "\t%c\n", name, ms->gapStart, ms->gapSize,
                                                ms->strand, ms->srcSize, status);
 }
 
@@ -715,11 +715,11 @@ void printMafBlockRow(struct MafSegment *mafSegment, int rownum, FILE *fh){
             name = appendIntToName(mafSegment->name, rownum);
         }
 
-        int32_t totalLen = mafSegment->srcSize;
-	int32_t start = getSegmentStart(segment);
+        int64_t totalLen = mafSegment->srcSize;
+	int64_t start = getSegmentStart(segment);
 	char strand = segment_getStrand(segment) ? '+' : '-';
-	int32_t len = segment_getLength(segment);//number of bases in the row
-	fprintf(fh, "s\t%s\t%d\t%d\t%c\t%d\t%s\n", name, start, len, strand, totalLen, segment_getString(segment));
+	int64_t len = segment_getLength(segment);//number of bases in the row
+	fprintf(fh, "s\t%s\t%" PRIi64 "\t%" PRIi64 "\t%c\t%" PRIi64 "\t%s\n", name, start, len, strand, totalLen, segment_getString(segment));
         printIrow(mafSegment, name, fh);
     }else{//gap, write 'e' row
         if(! mafSegment->empty ){
@@ -733,7 +733,7 @@ void printMafBlockRow(struct MafSegment *mafSegment, int rownum, FILE *fh){
 void printRefDup(struct MafSegment *mafSegment, FILE *fh){
     assert(mafSegment != NULL);
     Segment *segment = mafSegment->segment;
-    int32_t len = segment_getLength(segment);//number of bases in the row
+    int64_t len = segment_getLength(segment);//number of bases in the row
     if(segment != NULL){
         Cap *cap = segment_get5Cap(segment);
         char *seqName = cap_getSequenceName(cap);
@@ -748,10 +748,10 @@ void printRefDup(struct MafSegment *mafSegment, FILE *fh){
 	        currname = appendIntToName(seqName, rownum);
 		Sequence *sequence = segment_getSequence(currsegment);
 		assert(sequence != NULL);
-		int32_t totalLen = sequence_getLength(sequence);//length of the chromsome the row belongs to
-		int32_t start = getSegmentStart(currsegment);
+		int64_t totalLen = sequence_getLength(sequence);//length of the chromsome the row belongs to
+		int64_t start = getSegmentStart(currsegment);
 		char strand = segment_getStrand(currsegment) ? '+' : '-';
-		fprintf(fh, "s\t%s\t%d\t%d\t%c\t%d\t%s\n", currname, start, len, strand, totalLen, segment_getString(currsegment));
+		fprintf(fh, "s\t%s\t%" PRIi64 "\t%" PRIi64 "\t%c\t%" PRIi64 "\t%s\n", currname, start, len, strand, totalLen, segment_getString(currsegment));
 	        rownum++;
 	    }
 	}
@@ -760,10 +760,10 @@ void printRefDup(struct MafSegment *mafSegment, FILE *fh){
     return;
 }*/
 
-void printMafBlocks(struct List *refrow, int32_t c, struct List *spcRows, FILE *fh){
-    int32_t i, j, h;
+void printMafBlocks(struct List *refrow, int64_t c, struct List *spcRows, FILE *fh){
+    int64_t i, j, h;
     for(i=0; i< refrow->length; i++){//each block
-        //st_logInfo("\tColumn %d:\t", i);
+        //st_logInfo("\tColumn %" PRIi64 ":\t", i);
         fprintf(fh, "\na\n");
         struct MafSegment *refms = refrow->list[i];
         printMafBlockRow(refms, -1, fh);//print the reference row
@@ -815,7 +815,7 @@ void getAugmentedMafs(Flower *flower, FILE *fh, char *species){
     //Get the reference row
     st_logInfo("Getting the reference Rows (%s)\n", refSpc);
     struct List *refRows = getReferenceRows(flower, refSpc);
-    st_logInfo("Done. There are %d reference Rows.\n", refRows->length);
+    st_logInfo("Done. There are %" PRIi64 " reference Rows.\n", refRows->length);
     assert(refRows->length > 0);
 
     struct List *spcRows = constructEmptyList(0, free);//list of rows of other species
@@ -832,7 +832,7 @@ void getAugmentedMafs(Flower *flower, FILE *fh, char *species){
         //destructList(spcList);
  
 	for(int i=0; i < refRows->length; i++){//each reference row
-            //st_logInfo("\nRow: %d\n", i);
+            //st_logInfo("\nRow: %" PRIi64 "\n", i);
             printMafBlocks(refRows->list[i], i, spcRows, fh);
             //destructMyList(refRows->list->list[i]);
 
@@ -961,7 +961,7 @@ int main(int argc, char *argv[]){
     fprintf(fh, "\n");
 
     fclose(fh);
-    st_logInfo("Got the mafs in %i seconds/\n", time(NULL) - startTime);
+    st_logInfo("Got the mafs in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.

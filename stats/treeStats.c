@@ -44,7 +44,7 @@ void tabulateFloatStats(struct List *unsortedValues, double *totalNumber,
     *min = *(float *) unsortedValues->list[0];
     *max = *(float *) unsortedValues->list[unsortedValues->length - 1];
     *median = *(float *) unsortedValues->list[unsortedValues->length / 2];
-    int32_t i;
+    int64_t i;
     float j = 0;
     for (i = 0; i < unsortedValues->length; i++) {
         j += *(float *) unsortedValues->list[i];
@@ -71,13 +71,13 @@ void tabulateStats(struct IntList *unsortedValues, double *totalNumber,
     }
     unsortedValues = intListCopy(unsortedValues);
     assert(unsortedValues->length > 0);
-    qsort(unsortedValues->list, unsortedValues->length, sizeof(int32_t),
+    qsort(unsortedValues->list, unsortedValues->length, sizeof(int64_t),
             (int(*)(const void *, const void *)) intComparator_Int);
     *totalNumber = unsortedValues->length;
     *min = unsortedValues->list[0];
     *max = unsortedValues->list[unsortedValues->length - 1];
     *median = unsortedValues->list[unsortedValues->length / 2];
-    int32_t i, j = 0;
+    int64_t i, j = 0;
     for (i = 0; i < unsortedValues->length; i++) {
         j += unsortedValues->list[i];
     }
@@ -112,7 +112,7 @@ void tabulateAndPrintFloatValues(struct List *values, const char *tag,
             fileHandle,
             "<%s total=\"%f\" sum=\"%f\" min=\"%f\" max=\"%f\" avg=\"%f\" median=\"%f\">",
             tag, totalNumber, totalSum, min, max, avg, median);
-    int32_t i;
+    int64_t i;
     for (i = 0; i < values->length; i++) {
         fprintf(fileHandle, "%f ", *(float *) values->list[i]);
     }
@@ -130,16 +130,16 @@ void tabulateAndPrintIntValues(struct IntList *values, const char *tag,
             fileHandle,
             "<%s total=\"%f\" sum=\"%f\" min=\"%f\" max=\"%f\" avg=\"%f\" median=\"%f\">",
             tag, totalNumber, totalSum, min, max, avg, median);
-    int32_t i;
+    int64_t i;
     for (i = 0; i < values->length; i++) {
-        fprintf(fileHandle, "%i ", values->list[i]);
+        fprintf(fileHandle, "%" PRIi64 " ", values->list[i]);
     }
     printClosingTag(tag, fileHandle);
 }
 
 struct IntList *convertToIntList(stList *list) {
     struct IntList *tempList = constructEmptyIntList(0);
-    for (int32_t i = 0; i < stList_length(list); i++) {
+    for (int64_t i = 0; i < stList_length(list); i++) {
         intListAppend(tempList, stIntTuple_getPosition(stList_get(list, i), 0));
     }
     return tempList;
@@ -161,7 +161,7 @@ double calculateTreeBits(Flower *flower, double pathBitScore) {
      * Calculates the total number of bits to required to encode the path to every base in the flower.
      */
     double totalBitScore = 0.0;
-    int32_t totalSequenceSize;
+    int64_t totalSequenceSize;
     Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
     Group *group;
     double followingPathBitScore = (log(flower_getGroupNumber(flower)) / log(
@@ -207,7 +207,7 @@ void reportRelativeEntopyStats(Flower *flower, FILE *fileHandle) {
             totalP, totalQ, relativeEntropy, normalisedRelativeEntropy);
 }
 
-static void flowerStats(Flower *flower, int32_t currentDepth,
+static void flowerStats(Flower *flower, int64_t currentDepth,
         struct IntList *children, struct IntList *tangleChildren,
         struct IntList *linkChildren, struct IntList *depths) {
     /*
@@ -220,7 +220,7 @@ static void flowerStats(Flower *flower, int32_t currentDepth,
     if (!flower_isTerminal(flower)) {
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
-        int32_t i = 0;
+        int64_t i = 0;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
             if(!group_isLeaf(group)) {
                 flowerStats(group_getNestedFlower(group), currentDepth + 1,
@@ -297,7 +297,7 @@ void blockStats(Flower *flower, struct IntList *counts,
                 Segment *segment;
                 Block_InstanceIterator *segmentIterator =
                         block_getInstanceIterator(block);
-                int32_t i = 0;
+                int64_t i = 0;
                 while ((segment = block_getNext(segmentIterator)) != NULL) {
                     if (segment_getChildNumber(segment) == 0) {
                         i++;
@@ -307,7 +307,7 @@ void blockStats(Flower *flower, struct IntList *counts,
                 intListAppend(leafDegrees, i);
                 intListAppend(leafCoverage, block_getLength(block) * i);
                 if (perColumnStats) {
-                    for (int32_t j = 0; j < block_getLength(block); j++) {
+                    for (int64_t j = 0; j < block_getLength(block); j++) {
                         intListAppend(columnDegrees,
                                 block_getInstanceNumber(block));
                         intListAppend(columnLeafDegrees, i);
@@ -360,11 +360,11 @@ void reportBlockStatsP(Flower *flower, FILE *fileHandle,
     destructIntList(columnLeafDegrees);
 }
 
-int32_t reportBlockStats_minBlockDegree;
+int64_t reportBlockStats_minBlockDegree;
 bool reportBlockStatsP2(Block *block) {
     Segment *segment;
     Block_InstanceIterator *segmentIterator = block_getInstanceIterator(block);
-    int32_t i = 0;
+    int64_t i = 0;
     while ((segment = block_getNext(segmentIterator)) != NULL) {
         if (segment_getChildNumber(segment) == 0) {
             i++;
@@ -375,9 +375,9 @@ bool reportBlockStatsP2(Block *block) {
 }
 
 static void reportBlockStats(Flower *flower, FILE *fileHandle,
-        int32_t minBlockDegree, bool perColumnStats) {
+        int64_t minBlockDegree, bool perColumnStats) {
     reportBlockStats_minBlockDegree = minBlockDegree;
-    char *cA = stString_print("minimum_leaf_degree=\"%i\"", minBlockDegree);
+    char *cA = stString_print("minimum_leaf_degree=\"%" PRIi64 "\"", minBlockDegree);
     reportBlockStatsP(flower, fileHandle, reportBlockStatsP2, cA,
             perColumnStats);
 }
@@ -385,7 +385,7 @@ static void reportBlockStats(Flower *flower, FILE *fileHandle,
 static void chainStats(Flower *flower, struct IntList *counts,
         struct IntList *blockNumbers, struct IntList *baseBlockLengths,
         struct IntList *linkNumbers, struct IntList *avgInstanceBaseLengths,
-        int32_t minNumberOfBlocksInChain) {
+        int64_t minNumberOfBlocksInChain) {
     /*
      * Gets stats on the chains.
      * Counts is numbers per non-terminal flower.
@@ -409,7 +409,7 @@ static void chainStats(Flower *flower, struct IntList *counts,
         Flower_ChainIterator *chainIterator = flower_getChainIterator(flower);
         Chain *chain;
         Block **blocks;
-        int32_t i, j, k, l;
+        int64_t i, j, k, l;
         l = 0;
         while ((chain = flower_getNextChain(chainIterator)) != NULL) {
             blocks = chain_getBlockChain(chain, &i);
@@ -433,7 +433,7 @@ static void chainStats(Flower *flower, struct IntList *counts,
     }
 }
 
-static void reportChainStats(Flower *flower, int32_t minNumberOfBlocksInChain,
+static void reportChainStats(Flower *flower, int64_t minNumberOfBlocksInChain,
         FILE *fileHandle) {
     /*
      * Prints the chain stats to the XML file.
@@ -445,7 +445,7 @@ static void reportChainStats(Flower *flower, int32_t minNumberOfBlocksInChain,
     struct IntList *avgInstanceBaseLengths = constructEmptyIntList(0);
     chainStats(flower, counts, blockNumbers, baseBlockLengths, linkNumbers,
             avgInstanceBaseLengths, minNumberOfBlocksInChain);
-    fprintf(fileHandle, "<chains minimum_number_of_blocks_in_chain=\"%i\">",
+    fprintf(fileHandle, "<chains minimum_number_of_blocks_in_chain=\"%" PRIi64 "\">",
             minNumberOfBlocksInChain);
     tabulateAndPrintIntValues(counts, "counts", fileHandle);
     tabulateAndPrintIntValues(blockNumbers, "block_numbers", fileHandle);
@@ -492,7 +492,7 @@ void reportTerminalFlowerSizes(Flower *flower, FILE *fileHandle) {
     destructIntList(sizes);
 }
 
-static int32_t endDegree(End *end) {
+static int64_t endDegree(End *end) {
     /*
      * Returns the number of distint ends and end is connected to.
      */
@@ -509,12 +509,12 @@ static int32_t endDegree(End *end) {
         }
     }
     end_destructInstanceIterator(instanceIterator);
-    int32_t i = list->length;
+    int64_t i = list->length;
     destructList(list);
     return i;
 }
 
-int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
+int64_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
         stList *totalNonFreeStubEndNumbersPerTerminalGroup,
         struct List *endDegrees, stList *totalGroupsPerNet) {
     /*
@@ -524,17 +524,16 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
      */
     if (flower_isTerminal(flower)) {
         stList_append(totalEndNumbersPerTerminalGroup,
-                stIntTuple_construct(1, flower_getEndNumber(flower)));
+                stIntTuple_construct1( flower_getEndNumber(flower)));
         stList_append(
                 totalNonFreeStubEndNumbersPerTerminalGroup,
-                stIntTuple_construct(
-                        1,
+                stIntTuple_construct1(
                         flower_getEndNumber(flower)
                                 - flower_getFreeStubEndNumber(flower)));
 
         End *end;
         Flower_EndIterator *flowerEndIt = flower_getEndIterator(flower);
-        int32_t endConnectivity = 0;
+        int64_t endConnectivity = 0;
         while ((end = flower_getNextEnd(flowerEndIt))) {
             endConnectivity += endDegree(end);
         }
@@ -545,7 +544,7 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
                         (0.0 + endConnectivity) / flower_getEndNumber(flower)));
         return 1;
     } else {
-        int32_t totalGroups = 0;
+        int64_t totalGroups = 0;
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
@@ -563,7 +562,7 @@ int32_t netStats(Flower *flower, stList *totalEndNumbersPerTerminalGroup,
                 return totalGroups;
             }
         }
-        stList_append(totalGroupsPerNet, stIntTuple_construct(1, totalGroups));
+        stList_append(totalGroupsPerNet, stIntTuple_construct1( totalGroups));
         return 0;
     }
 }
@@ -604,8 +603,8 @@ void reportNetStats(Flower *flower, FILE *fileHandle) {
 void faceStats(Flower *flower, struct IntList *numberPerGroup,
         struct IntList *cardinality, struct IntList *isSimple,
         struct IntList *isRegular, struct IntList *isCanonical,
-        struct IntList *facesPerFaceAssociatedEnd, int32_t includeLinkGroups,
-        int32_t includeTangleGroups) {
+        struct IntList *facesPerFaceAssociatedEnd, int64_t includeLinkGroups,
+        int64_t includeTangleGroups) {
     /*
      * Face stats for the terminal AVGs.
      * Number per group: faces per group.
@@ -649,8 +648,8 @@ void faceStats(Flower *flower, struct IntList *numberPerGroup,
     }
 }
 
-void reportFaceStats(Flower *flower, int32_t includeLinkGroups,
-        int32_t includeTangleGroups, FILE *fileHandle) {
+void reportFaceStats(Flower *flower, int64_t includeLinkGroups,
+        int64_t includeTangleGroups, FILE *fileHandle) {
     /*
      * Prints the reference stats to the XML file.
      */
@@ -686,7 +685,7 @@ void reportReferenceStatsP(stList *caps, stList *adjacencyWeights) {
     End *end = cap_getEnd(cap);
     Cap *cap2;
     End_InstanceIterator *instanceIt = end_getInstanceIterator(end);
-    int32_t i = 0;
+    int64_t i = 0;
     while ((cap2 = end_getNext(instanceIt)) != NULL) {
         if (cap_getAdjacency(cap2) != NULL
                 && end_getPositiveOrientation(
@@ -698,7 +697,7 @@ void reportReferenceStatsP(stList *caps, stList *adjacencyWeights) {
     }
     end_destructInstanceIterator(instanceIt);
     assert(i > 0);
-    stList_append(adjacencyWeights, stIntTuple_construct(1, i-1));
+    stList_append(adjacencyWeights, stIntTuple_construct1( i-1));
 }
 
 void reportReferenceStats(Flower *flower, const char *referenceEventString,

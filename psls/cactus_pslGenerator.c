@@ -302,7 +302,7 @@ bool isMatch(struct Thread *qThread, struct Thread *tThread, int qi, int ti){
 }
 
 void fixNegStrandPsl(struct psl *psl){
-   int32_t temp;
+   int64_t temp;
    //convert the negative strand psl into correct coordinates
    if(!isPlus(psl->strand[0])){//query is on negative strand
       temp = psl->qStart + 1;
@@ -330,17 +330,17 @@ void addStub(Cap ***caps, Cap *cap, int *num){
 }
 
 //========== CONSTRUCTING A PSL - ADDING THE PARTS ============================
-int32_t getBlockStart(Cap *cap){
+int64_t getBlockStart(Cap *cap){
    /*Get the start coordinate of input segment
     *psl starts from 0, while catus start at an added stub, which is at position 1
     *Therefore need to substract 2 to convert to the right coordinate
     */
-   int32_t start = cap_getCoordinate(cap);//coordinate of cap on positive strand
+   int64_t start = cap_getCoordinate(cap);//coordinate of cap on positive strand
    if(cap_getStrand(cap)){
       return start -2;
    }else{
       Sequence *sequence = cap_getSequence(cap);
-      int32_t seqLen = sequence_getLength(sequence);
+      int64_t seqLen = sequence_getLength(sequence);
       return seqLen - 1 - (start -2);
    }
 }
@@ -354,8 +354,8 @@ void addPSLSizes(struct psl *psl, Cap *qcap, Cap *tcap){
 
 void addPSLStarts(struct psl *psl, Cap *qcap, Cap *tcap){
    //Get threads' starts relatively to the forward strands
-   int32_t qstart = cap_getCoordinate(qcap);
-   int32_t tstart = cap_getCoordinate(tcap);
+   int64_t qstart = cap_getCoordinate(qcap);
+   int64_t tstart = cap_getCoordinate(tcap);
    psl->qStart = qstart-2;
    psl->tStart = tstart-2;
 }
@@ -367,16 +367,16 @@ void addPSLStrand(struct psl *psl, Cap *qcap, Cap *tcap){
 }
 
 void addPSLEnds(struct psl *psl){
-   int32_t i = psl->blockCount -1;
-   int32_t qend = *(psl->qStarts +i) + *(psl->blockSizes +i);
-   int32_t tend = *(psl->tStarts +i) + *(psl->blockSizes +i);
+   int64_t i = psl->blockCount -1;
+   int64_t qend = *(psl->qStarts +i) + *(psl->blockSizes +i);
+   int64_t tend = *(psl->tStarts +i) + *(psl->blockSizes +i);
    psl->qEnd = isPlus(psl->strand[0]) ? qend : psl->qSize - 1 - qend; 
    psl->tEnd = isPlus(psl->strand[1]) ? tend : psl->tSize - 1 - tend; 
 }
 
-void addPSLInserts(struct psl *psl, int32_t currIndex){
-   int32_t qdiff;
-   int32_t tdiff;
+void addPSLInserts(struct psl *psl, int64_t currIndex){
+   int64_t qdiff;
+   int64_t tdiff;
    if(currIndex == 0){
       return;
    }
@@ -397,8 +397,8 @@ void addBlockToPSL(struct psl *psl, Cap *qcap, Cap *tcap){
     */
    psl->blockCount++;
    Segment *segment = cap_getSegment(qcap);
-   int32_t length = segment_getLength(segment);
-   int32_t currIndex = psl->blockCount -1;
+   int64_t length = segment_getLength(segment);
+   int64_t currIndex = psl->blockCount -1;
    //blockSizes
    psl->blockSizes = (unsigned *)realloc(psl->blockSizes, psl->blockCount*sizeof(unsigned));
    *(psl->blockSizes + currIndex) = length;
@@ -1347,7 +1347,7 @@ int main(int argc, char *argv[]) {
    }
    getAllPSLs(flower, fileHandle, query, target, refpsl, offset, tangle, exhaust);
    fclose(fileHandle);
-   st_logInfo("Got the psls in %i seconds/\n", time(NULL) - startTime);
+   st_logInfo("Got the psls in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
    ///////////////////////////////////////////////////////////////////////////
    // Clean up.

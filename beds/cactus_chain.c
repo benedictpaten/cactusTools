@@ -21,21 +21,21 @@
  *
  */
 
-char *getCoor(char *header, int32_t  *start, int32_t *chrsize);
+char *getCoor(char *header, int64_t  *start, int64_t *chrsize);
 int segmentCmp(const void *s1,const void *s2);
 //int segmentCmp(Segment *s1,Segment *s2);
 
 struct Thread{
     char *header;
     char *chr;
-    int32_t start;
+    int64_t start;
     stSortedSet *segments;
 };
 
 struct Thread *constructThread( char *header ){
     struct Thread *thread = st_malloc( sizeof(struct Thread) );
     thread->header = stString_copy( header );
-    int32_t chrsize = 0;
+    int64_t chrsize = 0;
     thread->chr = stString_copy(getCoor( header, &(thread->start), &chrsize ));
     thread->segments = stSortedSet_construct3(segmentCmp, NULL);
     return thread;
@@ -56,8 +56,8 @@ int segmentCmp(const void *sm1, const void *sm2){
     Segment *s2 = (Segment *) sm2;
     assert( segment_getStrand(s1) );
     assert( segment_getStrand(s2) );
-    int32_t start1 = segment_getStart(s1);
-    int32_t start2 = segment_getStart(s2);
+    int64_t start1 = segment_getStart(s1);
+    int64_t start2 = segment_getStart(s2);
     if(start1 == start2) {
         return 0;
     }else if( start1 < start2){
@@ -101,7 +101,7 @@ Cap *end_getCapBySeqName(End *end, char *name){
         Sequence *sequence = cap_getSequence(cap);
         if(sequence == NULL){continue;}
         char *sequenceHeader = formatSequenceHeader(sequence);
-        st_logInfo("%s\t%d\n", sequenceHeader, cap_getCoordinate(cap));
+        st_logInfo("%s\t%" PRIi64 "\n", sequenceHeader, cap_getCoordinate(cap));
         if(strstr(sequenceHeader, name) != NULL){//cap matched with name
             break;
         }
@@ -127,8 +127,8 @@ Segment *block_getSegmentByEventHeader(Block *block, char *header){
     return segment;
 }
 
-int32_t cap_getCoor(Cap *cap){
-    int32_t coor = cap_getCoordinate(cap);
+int64_t cap_getCoor(Cap *cap){
+    int64_t coor = cap_getCoordinate(cap);
     Sequence *seq = cap_getSequence(cap); 
     assert(seq != NULL);
     
@@ -141,11 +141,11 @@ int32_t cap_getCoor(Cap *cap){
     return coor;
 }
 
-int32_t getReverseCoor(int32_t coor, int32_t length){
+int64_t getReverseCoor(int64_t coor, int64_t length){
     return length -1 - coor;
 }
 
-int32_t cap_getSeqSize(Cap *cap){
+int64_t cap_getSeqSize(Cap *cap){
     Sequence *seq = cap_getSequence(cap);
     assert(seq != NULL);
     return sequence_getLength(seq);
@@ -163,7 +163,7 @@ char *cap_getChr(Cap *cap){
     return chr;
 }
     
-int32_t convertCoor(int32_t coor, int32_t chrsize, int32_t offset, int32_t fragmentsize, char strand){
+int64_t convertCoor(int64_t coor, int64_t chrsize, int64_t offset, int64_t fragmentsize, char strand){
     if(strand == '+'){
         coor = coor + offset; 
     }else{
@@ -172,7 +172,7 @@ int32_t convertCoor(int32_t coor, int32_t chrsize, int32_t offset, int32_t fragm
     return coor;
 }
 
-char *getCoor(char *header, int32_t  *start, int32_t *chrsize){
+char *getCoor(char *header, int64_t  *start, int64_t *chrsize){
     char *chr;
     char *tok;
     *start = 0;
@@ -186,14 +186,14 @@ char *getCoor(char *header, int32_t  *start, int32_t *chrsize){
     }else{
         tok = strtok(NULL, sep);
         if(tok != NULL){
-            sscanf( tok, "%d", chrsize );//chromsize
-            sscanf( strtok(NULL,sep), "%d", start);
+            sscanf( tok, "%" PRIi64 "", chrsize );//chromsize
+            sscanf( strtok(NULL,sep), "%" PRIi64 "", start);
         }
     }
     return chr;
 }
 
-int block_getCHAIN(Block *block, FILE *fileHandle, char *query, char *target, int32_t chainid) {
+int block_getCHAIN(Block *block, FILE *fileHandle, char *query, char *target, int64_t chainid) {
     /*
      */
     Block_InstanceIterator *instanceIterator = block_getInstanceIterator(block);
@@ -213,18 +213,18 @@ int block_getCHAIN(Block *block, FILE *fileHandle, char *query, char *target, in
                 }
                 Cap *cap5 = segment_get5Cap(segment);
                 Cap *cap3 = segment_get3Cap(segment);
-                int32_t qstart = cap_getCoor(cap5);
-                int32_t qend = cap_getCoor(cap3) + 1;
-                int32_t tstart = cap_getCoor(tcap5);
-                int32_t tend = cap_getCoor(cap_getOtherSegmentCap(tcap5)) + 1;
-                int32_t tsize = cap_getSeqSize(tcap5);
-                int32_t qsize = cap_getSeqSize(cap5);
+                int64_t qstart = cap_getCoor(cap5);
+                int64_t qend = cap_getCoor(cap3) + 1;
+                int64_t tstart = cap_getCoor(tcap5);
+                int64_t tend = cap_getCoor(cap_getOtherSegmentCap(tcap5)) + 1;
+                int64_t tsize = cap_getSeqSize(tcap5);
+                int64_t qsize = cap_getSeqSize(cap5);
                 char *tchr = cap_getChr(tcap5);
                 char tstrand = cap_getStrand(tcap5) ? '+' : '-';
                 char qstrand = cap_getStrand(cap5) ? '+' : '-';
                
-                int32_t qchrsize = qsize; 
-                int32_t start = 0;
+                int64_t qchrsize = qsize; 
+                int64_t start = 0;
                 //char *qchr = getCoor( sequenceHeader, &start, &qchrsize );
                 char *qchr;
                 if( strstr(sequenceHeader, "NODE") != NULL ){//HACK for Velvet's contig headers
@@ -236,9 +236,9 @@ int block_getCHAIN(Block *block, FILE *fileHandle, char *query, char *target, in
 
                 qstart = convertCoor(qstart, qchrsize, start, qsize, qstrand);
                 qend = convertCoor(qend, qchrsize, start, qsize, qstrand);
-                fprintf(fileHandle, "chain %d %s %d %c %d %d %s %d %c %d %d %d\n", 0, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
+                fprintf(fileHandle, "chain %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %" PRIi64 "\n", (int64_t)0, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
                 chainid ++;
-                fprintf(fileHandle, "%d\n\n", segment_getLength(segment));
+                fprintf(fileHandle, "%" PRIi64 "\n\n", segment_getLength(segment));
             }
             free(sequenceHeader);
         }
@@ -256,21 +256,21 @@ void removeSubSortedSet( stSortedSet *segments, Segment *segment){
     return;
 }
 
-int32_t printThread( struct Thread *thread, FILE *fileHandle, char *query, char *target, int32_t chainid ){
+int64_t printThread( struct Thread *thread, FILE *fileHandle, char *query, char *target, int64_t chainid ){
     char qstrand = '.';
     char tstrand = '.';
     char *tchr = "";
     char *qchr = "";
-    int32_t start = 0;
-    int32_t qchrsize;
-    int32_t qstart = 0;
-    int32_t tstart = 0;
-    int32_t qend = -1;
-    int32_t tend = -1;
-    int32_t qsize = 0;
-    int32_t tsize = 0;
-    int32_t dq = 0;
-    int32_t dt = 0;
+    int64_t start = 0;
+    int64_t qchrsize;
+    int64_t qstart = 0;
+    int64_t tstart = 0;
+    int64_t qend = -1;
+    int64_t tend = -1;
+    int64_t qsize = 0;
+    int64_t tsize = 0;
+    int64_t dq = 0;
+    int64_t dt = 0;
     struct IntList *blockSizes = constructEmptyIntList(0);
     struct IntList *dtList = constructEmptyIntList(0);
     struct IntList *dqList = constructEmptyIntList(0);
@@ -298,8 +298,8 @@ int32_t printThread( struct Thread *thread, FILE *fileHandle, char *query, char 
             }else{
                 assert( (qstrand == '+' && cap_getStrand(qcap)) || (qstrand == '-' && !cap_getStrand(qcap)) );
                 assert( (tstrand == '+' && cap_getStrand(tcap)) || (tstrand == '-' && !cap_getStrand(tcap)) );
-                dt = abs(cap_getCoor(tcap) - tend);
-                dq = abs(cap_getCoor(qcap) - qend);
+                dt = llabs(cap_getCoor(tcap) - tend);
+                dq = llabs(cap_getCoor(qcap) - qend);
                 intListAppend(dtList, dt);
                 intListAppend(dqList, dq);
             }
@@ -337,27 +337,27 @@ int32_t printThread( struct Thread *thread, FILE *fileHandle, char *query, char 
     int score = 0;
     
     if(tstrand == '+'){
-        fprintf(fileHandle, "chain %d %s %d %c %d %d %s %d %c %d %d %d\n", score, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
+        fprintf(fileHandle, "chain %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %" PRIi64 "\n", (int64_t)score, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
         //Print blockSizes
         for(int i=0; i< dtList->length; i++){
-            fprintf(fileHandle, "%d %d %d\n", blockSizes->list[i], dtList->list[i], dqList->list[i]);
+            fprintf(fileHandle, "%" PRIi64 " %" PRIi64 " %" PRIi64 "\n", blockSizes->list[i], dtList->list[i], dqList->list[i]);
         }
-        fprintf(fileHandle, "%d\n", blockSizes->list[blockSizes->length - 1]);
+        fprintf(fileHandle, "%" PRIi64 "\n", blockSizes->list[blockSizes->length - 1]);
     }else{ //reverse the chain so that tstrand is '+'
         tstrand = '+';
         qstrand = qstrand == '+' ? '-' : '+';
-        int32_t temp = qend;
+        int64_t temp = qend;
         qend = getReverseCoor(qstart, qchrsize) + 1;
         qstart = getReverseCoor(temp, qchrsize) + 1;
         temp = tend;
         tend = getReverseCoor(tstart, tsize) + 1;
         tstart = getReverseCoor(temp, tsize) + 1;
-        fprintf(fileHandle, "chain %d %s %d %c %d %d %s %d %c %d %d %d\n", score, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
+        fprintf(fileHandle, "chain %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %s %" PRIi64 " %c %" PRIi64 " %" PRIi64 " %" PRIi64 "\n", (int64_t)score, tchr, tsize, tstrand, tstart, tend, qchr, qchrsize, qstrand, qstart, qend, chainid);
 
         for(int i= dtList->length - 1; i >= 0; i--){
-            fprintf(fileHandle, "%d %d %d\n", blockSizes->list[i + 1], dtList->list[i], dqList->list[i]);
+            fprintf(fileHandle, "%" PRIi64 " %" PRIi64 " %" PRIi64 "\n", blockSizes->list[i + 1], dtList->list[i], dqList->list[i]);
         }
-        fprintf(fileHandle, "%d\n", blockSizes->list[0]);
+        fprintf(fileHandle, "%" PRIi64 "\n", blockSizes->list[0]);
     }
 
     fprintf(fileHandle, "\n");
@@ -398,7 +398,7 @@ void addSegments(struct List *threads, Block *block, char *query, char *target){
             char *seqHeader = formatSequenceHeader( seq );
             char *eventHeader = stString_copy( event_getHeader( sequence_getEvent(seq) ) );
             if( strcmp(eventHeader, query) == 0 ){
-                int32_t i;
+                int64_t i;
                 for(i = 0; i < threads->length; i++){
                     thread = threads->list[i];
                     if( strcmp(thread->header, seqHeader) == 0 ){
@@ -418,17 +418,17 @@ void addSegments(struct List *threads, Block *block, char *query, char *target){
     block_destructInstanceIterator( it );
 }
 
-int32_t chain_getCHAINs(Chain *chain, FILE *fileHandle, char *query, char *target, int32_t chainid) {
+int64_t chain_getCHAINs(Chain *chain, FILE *fileHandle, char *query, char *target, int64_t chainid) {
     struct List *threads = constructEmptyList(0, free);
-    int32_t numBlocks;
+    int64_t numBlocks;
     Block **blocks = chain_getBlockChain( chain, &numBlocks); 
-    for(int32_t i=0; i< numBlocks; i++){
+    for(int64_t i=0; i< numBlocks; i++){
         addSegments( threads, blocks[i], query, target );
     }
     free(blocks);
 
     //Print the chains:
-    for( int32_t i = 0; i< threads->length; i++ ){
+    for( int64_t i = 0; i< threads->length; i++ ){
         struct Thread *thread = threads->list[i];
         chainid = printThread( thread, fileHandle, query, target, chainid );
         destructThread(thread);
@@ -440,7 +440,7 @@ int32_t chain_getCHAINs(Chain *chain, FILE *fileHandle, char *query, char *targe
     return chainid;
 }
 
-int32_t getSeqLength(Flower *flower, char *header){
+int64_t getSeqLength(Flower *flower, char *header){
     Flower_SequenceIterator *it = flower_getSequenceIterator(flower);
     Sequence *sequence;
     while((sequence = flower_getNextSequence(it)) != NULL){
@@ -454,16 +454,16 @@ int32_t getSeqLength(Flower *flower, char *header){
     return 0;
 }
 
-int getCHAINs(Flower *flower, FILE *fileHandle, char *query, char *target, int32_t chainid){
+int getCHAINs(Flower *flower, FILE *fileHandle, char *query, char *target, int64_t chainid){
     Chain *chain;
-    int32_t startTime;
+    int64_t startTime;
     Flower_ChainIterator *chainIt = flower_getChainIterator( flower );
 
     //Get chains of current level
     while( (chain = flower_getNextChain(chainIt) ) != NULL ){
         startTime = time(NULL);
         chainid = chain_getCHAINs( chain, fileHandle, query, target, chainid );
-        st_logInfo("chain_getCHAINs in %i seconds/\n", time(NULL) - startTime);
+        st_logInfo("chain_getCHAINs in %" PRIi64 " seconds/\n", time(NULL) - startTime);
     }
     flower_destructChainIterator( chainIt );
 
@@ -477,7 +477,7 @@ int getCHAINs(Flower *flower, FILE *fileHandle, char *query, char *target, int32
         }
     }
     flower_destructBlockIterator(blockIterator);
-    st_logInfo("(block_getChain)s in %i s/\n", time(NULL) - startTime );
+    st_logInfo("(block_getChain)s in %" PRIi64 " s/\n", time(NULL) - startTime );
 
     //Call child flowers recursively.
     Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
@@ -617,7 +617,7 @@ int main(int argc, char *argv[]) {
     //fprintf(fileHandle, "track name=%s\n", species);
     getCHAINs(flower, fileHandle, query, target, 0);
     fclose(fileHandle);
-    st_logInfo("Got the chains in %i seconds/\n", time(NULL) - startTime);
+    st_logInfo("Got the chains in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.

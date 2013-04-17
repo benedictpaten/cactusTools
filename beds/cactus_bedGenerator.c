@@ -37,15 +37,17 @@ struct Thread{
     char *header;
     char *chr;
     char *chainName;
-    int32_t start;
-    int32_t segmentNumber;
+    int64_t start;
+    int64_t segmentNumber;
     stSortedSet *segments;
 };
 
 struct Thread *constructThread( char *header, char *chainName ){
     struct Thread *thread = st_malloc( sizeof(struct Thread) );
     thread->header = stString_copy( header );
-    thread->chr = stString_copy(getCoor( header, &(thread->start) ));
+    int i;
+    thread->chr = stString_copy(getCoor(header, &i));
+    thread->start = i;
     thread->chainName = stString_copy( chainName );
     thread->segments = stSortedSet_construct3(segmentCmp, NULL);
     return thread;
@@ -67,8 +69,8 @@ int segmentCmp(const void *sm1, const void *sm2){
     Segment *s2 = (Segment *) sm2;
     assert( segment_getStrand(s1) );
     assert( segment_getStrand(s2) );
-    int32_t start1 = segment_getStart(s1);
-    int32_t start2 = segment_getStart(s2);
+    int64_t start1 = segment_getStart(s1);
+    int64_t start2 = segment_getStart(s2);
     if(start1 == start2) {
         return 0;
     }else if( start1 < start2){
@@ -180,7 +182,7 @@ void removeSubSortedSet( stSortedSet *segments, Segment *segment){
     return;
 }
 
-void printThread( struct Thread *thread, FILE *fileHandle, int32_t level ){
+void printThread( struct Thread *thread, FILE *fileHandle, int64_t level ){
     struct IntList *blockStarts = constructEmptyIntList(0);
     struct IntList *blockSizes = constructEmptyIntList(0);
 
@@ -207,28 +209,28 @@ void printThread( struct Thread *thread, FILE *fileHandle, int32_t level ){
         printThread( thread, fileHandle, level );
     }
 
-    int32_t blockCount = blockStarts->length;
+    int64_t blockCount = blockStarts->length;
     if( blockCount == 0 ){
         return;
     }
     //st_logInfo("\tblockCount = %d\n", blockCount);
     
-    int32_t chromStart = blockStarts->list[0] + thread->start -1;
-    int32_t chromEnd = blockStarts->list[blockCount -1] + blockSizes->list[blockCount -1] + thread->start -1;
+    int64_t chromStart = blockStarts->list[0] + thread->start -1;
+    int64_t chromEnd = blockStarts->list[blockCount -1] + blockSizes->list[blockCount -1] + thread->start -1;
     
-    fprintf(fileHandle, "%s %d %d %s.%d %d %s %d %d %s %d ", thread->chr, chromStart, chromEnd,
-                         thread->chainName, level, 0, ".", chromStart, chromEnd, "0", blockCount);
+    fprintf(fileHandle, "%s %" PRIi64 " %" PRIi64 " %s.%" PRIi64 " %" PRIi64 " %s %" PRIi64 " %" PRIi64 " %s %" PRIi64 " ", thread->chr, chromStart, chromEnd,
+                         thread->chainName, level, (int64_t)0, ".", chromStart, chromEnd, "0", blockCount);
     
     //Print blockSizes
-    int32_t i;
+    int64_t i;
     for(i=0; i< blockCount; i++){
-        fprintf(fileHandle, "%d,", blockSizes->list[i] );
+        fprintf(fileHandle, "%" PRIi64 ",", blockSizes->list[i] );
     }
     destructIntList(blockSizes);
     fprintf(fileHandle, " ");
     for(i=0; i< blockCount; i++){
-        //fprintf(fileHandle, "%d,", blockStarts->list[i] );
-        fprintf(fileHandle, "%d,", blockStarts->list[i] - blockStarts->list[0] );
+        //fprintf(fileHandle, "%" PRIi64 ",", blockStarts->list[i] );
+        fprintf(fileHandle, "%" PRIi64 ",", blockStarts->list[i] - blockStarts->list[0] );
     }
     destructIntList(blockStarts);
     fprintf(fileHandle, "\n");
@@ -246,7 +248,7 @@ void addSegmentToThread( struct Thread *thread, Segment *segment ){
 void addSegments( struct List *threads, Block *block, char *header, char *chainName ){
     //st_logInfo("\taddSegments, header %s, chain %s\n", header, chainName);
     Segment *segment;
-    int32_t startTime;
+    int64_t startTime;
     struct Thread *thread = NULL;
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     while( (segment = block_getNext(it)) != NULL ){
@@ -256,7 +258,7 @@ void addSegments( struct List *threads, Block *block, char *header, char *chainN
             char *eventHeader = stString_copy( event_getHeader( sequence_getEvent(seq) ) );
             if( strcmp(eventHeader, header) == 0 ){
                 //st_logInfo("\t\tFound %s\n", seqHeader);
-                int32_t i;
+                int64_t i;
                 for(i = 0; i < threads->length; i++){
                     thread = threads->list[i];
                     if( strcmp(thread->header, seqHeader) == 0 ){
@@ -269,7 +271,7 @@ void addSegments( struct List *threads, Block *block, char *header, char *chainN
                 }
                 startTime = time(NULL);
                 addSegmentToThread( thread, segment );
-                //st_logInfo("addSegmentToThread in %i seconds/\n", time(NULL) - startTime);
+                //st_logInfo("addSegmentToThread in %" PRIi64 " seconds/\n", time(NULL) - startTime);
             }
             free(seqHeader);
             free(eventHeader);
@@ -286,26 +288,26 @@ void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
     //st_logInfo("\tchainName: %s\n", chainName);
     
     //Get all the threads with eventHeader 'species'
-    int32_t startTime = time(NULL);
+    int64_t startTime = time(NULL);
     struct List * threads = constructEmptyList(0, free);
-    int32_t numBlocks;
+    int64_t numBlocks;
     Block **blocks = chain_getBlockChain( chain, &numBlocks );
-    for( int32_t i = 0; i< numBlocks; i++ ){
+    for( int64_t i = 0; i< numBlocks; i++ ){
         Block * block = blocks[i];
         addSegments( threads, block, species, chainName );
     }
     free(blocks);
-    //st_logInfo("Adding all segments for the chain in %i seconds/\n", time(NULL) - startTime);
+    //st_logInfo("Adding all segments for the chain in %" PRIi64 " seconds/\n", time(NULL) - startTime);
     //st_logInfo("\t%d blocks; %d threads\n", numBlocks, threads->length);
 
     //Print the beds:
     startTime = time(NULL);
-    for( int32_t i = 0; i< threads->length; i++ ){
+    for( int64_t i = 0; i< threads->length; i++ ){
         struct Thread *thread = threads->list[i];
         printThread( thread, fileHandle, level );
         destructThread(thread);
     }
-    //st_logInfo("printThread in %i seconds/\n", time(NULL) - startTime);
+    //st_logInfo("printThread in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     free(threads->list);
     free(threads);
@@ -316,14 +318,14 @@ void chain_getBEDs(Chain *chain, FILE *fileHandle, char *species, int level) {
 void getBEDs(Flower *flower, FILE *fileHandle, char *species, int level){
     //st_logInfo("getBEDs, species %s\n", species);
     Chain *chain;
-    int32_t startTime;
+    int64_t startTime;
     Flower_ChainIterator *chainIt = flower_getChainIterator( flower );
     
     //Get beds for chains at current level
     while( (chain = flower_getNextChain(chainIt)) != NULL ){
         startTime = time(NULL);
         chain_getBEDs(chain, fileHandle, species, level);
-        //st_logInfo("chain_getBEDs in %i seconds/\n", time(NULL) - startTime);
+        //st_logInfo("chain_getBEDs in %" PRIi64 " seconds/\n", time(NULL) - startTime);
     }
     flower_destructChainIterator( chainIt );
 
@@ -337,7 +339,7 @@ void getBEDs(Flower *flower, FILE *fileHandle, char *species, int level){
         }
     }
     flower_destructBlockIterator( blockIt );
-    //st_logInfo("(block_getChain)s in %i seconds/\n", time(NULL) - startTime);
+    //st_logInfo("(block_getChain)s in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     //Call child flowers recursively
     Flower_GroupIterator *groupIt = flower_getGroupIterator( flower );
@@ -478,7 +480,7 @@ int main(int argc, char *argv[]) {
    
     getBEDs(flower, fileHandle, species, 0);
     fclose(fileHandle);
-    st_logInfo("Got the beds in %i seconds/\n", time(NULL) - startTime);
+    st_logInfo("Got the beds in %" PRIi64 " seconds/\n", time(NULL) - startTime);
 
     ///////////////////////////////////////////////////////////////////////////
     // Clean up.

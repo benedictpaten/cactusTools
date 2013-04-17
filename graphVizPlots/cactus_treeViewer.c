@@ -141,7 +141,7 @@ void makeCactusTree_flower(Flower *flower, FILE *fileHandle, const char *parentN
         Flower_GroupIterator *groupIterator = flower_getGroupIterator(flower);
         Group *group;
         double size = 0.0; //get the size of the group organising node..
-        int32_t nonTrivialGroupCount = 0;
+        int64_t nonTrivialGroupCount = 0;
         while ((group = flower_getNextGroup(groupIterator)) != NULL) {
             assert(!group_isLeaf(group));
             if (group_isTangle(group)) {

@@ -47,7 +47,7 @@ static char *getSegmentStringShowingOnlySubstitutionsWithRespectToTheReference(S
             char *string2 = segment_getString(segment2);
             assert(string2 != NULL);
             assert(strlen(string) == strlen(string2));
-            for(int32_t i=0; i<strlen(string); i++) {
+            for(int64_t i=0; i<strlen(string); i++) {
                 if(toupper(string[i]) == toupper(string2[i])) {
                     string[i] = '*';
                 }
@@ -65,18 +65,18 @@ static void getMAFBlockP2(Segment *segment, FILE *fileHandle, char *(*getString)
     Sequence *sequence = segment_getSequence(segment);
     if (sequence != NULL) {
         char *sequenceHeader = formatSequenceHeader(sequence);
-        int32_t start;
+        int64_t start;
         if (segment_getStrand(segment)) {
             start = segment_getStart(segment) - sequence_getStart(sequence);
         } else { //start with respect to the start of the reverse complement sequence
             start = (sequence_getStart(sequence) + sequence_getLength(sequence)
                     - 1) - segment_getStart(segment);
         }
-        int32_t length = segment_getLength(segment);
+        int64_t length = segment_getLength(segment);
         char *strand = segment_getStrand(segment) ? "+" : "-";
-        int32_t sequenceLength = sequence_getLength(sequence);
+        int64_t sequenceLength = sequence_getLength(sequence);
         char *instanceString = getString(segment); //segment_getString(segment);
-        fprintf(fileHandle, "s\t%s\t%i\t%i\t%s\t%i\t%s\n", sequenceHeader,
+        fprintf(fileHandle, "s\t%s\t%" PRIi64 "\t%" PRIi64 "\t%s\t%" PRIi64 "\t%s\n", sequenceHeader,
                 start, length, strand, sequenceLength, instanceString);
         free(instanceString);
         free(sequenceHeader);
@@ -84,17 +84,17 @@ static void getMAFBlockP2(Segment *segment, FILE *fileHandle, char *(*getString)
 }
 
 static void getMAFBlockP(Segment *segment, FILE *fileHandle, char *(*getString)(Segment *segment)) {
-    int32_t i;
+    int64_t i;
     for (i = 0; i < segment_getChildNumber(segment); i++) {
         getMAFBlockP(segment_getChild(segment, i), fileHandle, getString);
     }
     getMAFBlockP2(segment, fileHandle, getString);
 }
 
-static int32_t getNumberOnPositiveStrand(Block *block) {
+static int64_t getNumberOnPositiveStrand(Block *block) {
     Block_InstanceIterator *it = block_getInstanceIterator(block);
     Segment *segment;
-    int32_t i = 0;
+    int64_t i = 0;
     while ((segment = block_getNext(it)) != NULL) {
         if (segment_getChildNumber(segment) == 0) {
             if (segment_getStrand(segment)) {
@@ -121,18 +121,18 @@ static void getMAFBlock2(Block *block, FILE *fileHandle, char *(*getString)(Segm
             /* Get newick tree string with internal labels and no unary events */
             char *newickTreeString = block_makeNewickString(block, 1, 0);
             assert(newickTreeString != NULL);
-            fprintf(fileHandle, "a score=%i tree='%s'\n",
+            fprintf(fileHandle, "a score=%" PRIi64 " tree='%s'\n",
                     block_getLength(block) * block_getInstanceNumber(block),
                     newickTreeString);
             free(newickTreeString);
         } else {
-            fprintf(fileHandle, "a score=%i\n",
+            fprintf(fileHandle, "a score=%" PRIi64 "\n",
                     block_getLength(block) * block_getInstanceNumber(block));
         }
         //Now for the reference segment
         /*if (referenceSequence != NULL) {
          char *instanceString = getConsensusString(block);
-         fprintf(fileHandle, "s\t%s\t%i\t%i\t%s\t%i\t%s\n",
+         fprintf(fileHandle, "s\t%s\t%" PRIi64 "\t%" PRIi64 "\t%s\t%" PRIi64 "\t%s\n",
          referenceSequence->header, referenceSequence->index,
          block_getLength(block), "+", referenceSequence->length,
          instanceString);

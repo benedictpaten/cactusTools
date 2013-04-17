@@ -30,13 +30,13 @@
 #endif
 
 // Sub for recursion
-static int32_t transmap_getTotalDistanceBetweenCaps(Cap * A, Cap * B);
+static int64_t transmap_getTotalDistanceBetweenCaps(Cap * A, Cap * B);
 
 /*
  * Computes the current distance between two adjacent
  * cap in the nested sub-graph
  */
-static int32_t transmap_getTotalDistanceAtAdjacency(Cap * A) {
+static int64_t transmap_getTotalDistanceAtAdjacency(Cap * A) {
 	Flower * flower = group_getNestedFlower(end_getGroup(cap_getEnd(A)));
 	Cap * B = cap_getAdjacency(A);
 	Cap * childA, * childB;
@@ -58,9 +58,9 @@ static int32_t transmap_getTotalDistanceAtAdjacency(Cap * A) {
  * Computes the current distance between two caps
  * Returns -1 if no simple path was found
  */
-static int32_t transmap_getTotalDistanceBetweenCaps(Cap * A, Cap * B) {
-	int32_t remaining_length;
-	int32_t length;
+static int64_t transmap_getTotalDistanceBetweenCaps(Cap * A, Cap * B) {
+	int64_t remaining_length;
+	int64_t length;
 	
 	// End of recursion scenarios
 	if (A == B)
@@ -87,12 +87,12 @@ static int32_t transmap_getTotalDistanceBetweenCaps(Cap * A, Cap * B) {
 }
 
 // Stub for recursion
-static int32_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap * B, int32_t * allowed_distance);
+static int64_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap * B, int64_t * allowed_distance);
 
 /* 
  * Projects the stochastic search to a nested flower
  */
-static int32_t transmap_sampleOrderAndOrientationAtNestedFlower(Event * E, Cap * A, int * allowed_distance) {
+static int64_t transmap_sampleOrderAndOrientationAtNestedFlower(Event * E, Cap * A, int * allowed_distance) {
 	Flower * flower = group_getNestedFlower(end_getGroup(cap_getEnd(A)));
 	Cap * B, * childA, * childB;
 	Event * childE;
@@ -126,11 +126,11 @@ static int32_t transmap_sampleOrderAndOrientationAtNestedFlower(Event * E, Cap *
 /* 
  * Stochastic decision whether to jump a face or not
  */
-static int32_t transmap_goByAncestralPath(Face * face, Event * E) {
+static int64_t transmap_goByAncestralPath(Face * face, Event * E) {
 	Event * topEvent, * bottomEvent, * tmpEvent;
 	float totalTimeSpan = 0;
 	float partialTimeSpan = 0;
-	int32_t index;
+	int64_t index;
 
 	// Get the framing events of the face
 	for (index = 0; index < face_getCardinal(face); index++) {
@@ -168,9 +168,9 @@ static int32_t transmap_goByAncestralPath(Face * face, Event * E) {
 /*
  * Returns the number of highest attached caps below cap A
  */
-static int32_t transmap_findBottomCapNumberBelow(Cap * A) {
-	int32_t total = 0;
-	int32_t childIndex;
+static int64_t transmap_findBottomCapNumberBelow(Cap * A) {
+	int64_t total = 0;
+	int64_t childIndex;
 
 	// End of recursion
 	if (cap_getAdjacency(A))
@@ -186,7 +186,7 @@ static int32_t transmap_findBottomCapNumberBelow(Cap * A) {
 /*
  * Returns the number of highest attached cap below or at event E
  */
-static int32_t transmap_findBottomCapNumber(Event * E, Cap * A) {
+static int64_t transmap_findBottomCapNumber(Event * E, Cap * A) {
 	Cap * tmp = A;
 
 	// Try upwards
@@ -217,7 +217,7 @@ static Cap* transmap_findTopCap(Event * E, Cap * A) {
  * such cap.
  */
 static Cap* transmap_findBottomCapBelow(Cap * A) {
-	int32_t childIndex;
+	int64_t childIndex;
 	Cap * result;
 
 	// End of recursion
@@ -255,11 +255,11 @@ static Cap* transmap_findBottomCap(Event * E, Cap * A) {
  * Tries to connect two caps at the time of event
  * Returns true if success
  */
-static int32_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap * B, int32_t * allowed_distance) {
+static int64_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap * B, int64_t * allowed_distance) {
 	Face * face;
-	int32_t index;
+	int64_t index;
 	Cap * topCap;
-	int32_t bottomCapNumber;
+	int64_t bottomCapNumber;
 
 	// Termination of recursion
 	if (cap_getEnd(A) == cap_getEnd(B))
@@ -333,7 +333,7 @@ static int32_t transmap_sampleOrderAndOrientationAtEvent(Event * E, Cap * A, Cap
 /*
  * Wrapper to the transmap_sampleOrderAndOrientationAtEvent function
  */
-static bool transmap_samplePathAtEvent(Event * E, Cap * A, Cap * B, int32_t distance) {
+static bool transmap_samplePathAtEvent(Event * E, Cap * A, Cap * B, int64_t distance) {
 	switch (transmap_sampleOrderAndOrientationAtEvent(E, A, B, &distance)) {
 	case true:
 		return true;
@@ -353,7 +353,7 @@ static bool transmap_samplePathAtEvent(Event * E, Cap * A, Cap * B, int32_t dist
 bool transmap_connectivityOrderAndOrientationWasPresentAtEvent(Event *E, Cap *A, Cap *B, int sample_size, int result_cutoff, int distance_multiplier) {
 	int index;
 	int result = 0;
-	int32_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
+	int64_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
 
 	srand(time(NULL));
 
@@ -375,7 +375,7 @@ bool transmap_connectivityOrderAndOrientationWasPresentAtEvent(Event *E, Cap *A,
 bool transmap_connectivityAndOrientationWasPresentAtEvent(Event *E, Cap *A, Cap *B, int sample_size, int result_cutoff, int distance_multiplier) {
 	int index;
 	int result = 0;
-	int32_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
+	int64_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
 
 	srand(time(NULL));
 
@@ -398,7 +398,7 @@ bool transmap_connectivityAndOrientationWasPresentAtEvent(Event *E, Cap *A, Cap 
 bool transmap_connectivityAndOrderWasPresentAtEvent(Event *E, Cap *A, Cap *B, int sample_size, int result_cutoff, int distance_multiplier) {
 	int index;
 	int result = 0;
-	int32_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
+	int64_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
 
 	srand(time(NULL));
 
@@ -422,7 +422,7 @@ bool transmap_connectivityAndOrderWasPresentAtEvent(Event *E, Cap *A, Cap *B, in
 bool transmap_connectivityWasPresentAtEvent(Event *E, Cap *A, Cap *B, int sample_size, int result_cutoff, int distance_multiplier) {
 	int index;
 	int result = 0;
-	int32_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
+	int64_t distance = distance_multiplier * transmap_getTotalDistanceBetweenCaps(A,B);
 
 	srand(time(NULL));
 
