@@ -140,7 +140,7 @@ void tabulateAndPrintIntValues(struct IntList *values, const char *tag,
 struct IntList *convertToIntList(stList *list) {
     struct IntList *tempList = constructEmptyIntList(0);
     for (int64_t i = 0; i < stList_length(list); i++) {
-        intListAppend(tempList, stIntTuple_getPosition(stList_get(list, i), 0));
+        intListAppend(tempList, stIntTuple_get(stList_get(list, i), 0));
     }
     return tempList;
 }
