@@ -30,10 +30,10 @@ void tabulateFloatStats(struct List *unsortedValues, double *totalNumber,
     if (unsortedValues->length == 0) {
         *totalNumber = 0;
         *totalSum = 0;
-        *min = INT32_MAX;
-        *max = INT32_MAX;
-        *avg = INT32_MAX;
-        *median = INT32_MAX;
+        *min = INT64_MAX;
+        *max = INT64_MAX;
+        *avg = INT64_MAX;
+        *median = INT64_MAX;
         return;
     }
     unsortedValues = listCopy(unsortedValues); //copy the input list, to avoid altering the input.
@@ -63,10 +63,10 @@ void tabulateStats(struct IntList *unsortedValues, double *totalNumber,
     if (unsortedValues->length == 0) {
         *totalNumber = 0;
         *totalSum = 0;
-        *min = INT32_MAX;
-        *max = INT32_MAX;
-        *avg = INT32_MAX;
-        *median = INT32_MAX;
+        *min = INT64_MAX;
+        *max = INT64_MAX;
+        *avg = INT64_MAX;
+        *median = INT64_MAX;
         return;
     }
     unsortedValues = intListCopy(unsortedValues);
