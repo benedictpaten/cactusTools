@@ -83,7 +83,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
         adjacencyGraphDotFile = os.path.join(outputDir, "adjacencyGraph.dot")
         adjacencyGraphPDFFile = os.path.join(outputDir, "adjacencyGraph.pdf")
         runCactusAdjacencyGraphViewer(adjacencyGraphDotFile, cactusDiskDatabaseString)
-        runGraphViz(adjacencyGraphDotFile, adjacencyGraphPDFFile)
+        #runGraphViz(adjacencyGraphDotFile, adjacencyGraphPDFFile) //Taking this line out to avoid graphviz crashing in an annoying way
         logger.info("Ran the adjacency graph plot script")
     else:
         logger.info("Not building a adjacency graph plot")
