@@ -36,8 +36,7 @@ from sonLib.tree import makeRandomBinaryTree
 from jobTree.src.common import runJobTreeStatusAndFailIfNotComplete
 from jobTree.src.common import runJobTreeStats
 
-from cactus.shared.config import checkDatabaseConf
-from cactus.shared.config import CactusWorkflowExperiment
+from cactus.shared.experimentWrapper import ExperimentWrapper
 import cactus.shared.test
 
 def runWorkflow_TestScript(sequences, newickTreeString, 
@@ -66,7 +65,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
                            buildAvgs=buildAvgs, buildReference=buildReference,
                            configFile=configFile,
                            buildJobTreeStats=buildJobTreeStats)
-    cactusDiskDatabaseString = experiment.getDatabaseString()
+    cactusDiskDatabaseString = experiment.getConfString()
     
     #Run the cactus tree graph-viz plot
     if buildCactusPDF:
@@ -106,7 +105,7 @@ def runWorkflow_TestScript(sequences, newickTreeString,
         logger.info("Not building the MAFs")
         
     #Now remove everything we generate
-    experiment.cleanupDatabase()
+    experiment.cleanupDb()
     system("rm -rf %s" % tempDir)    
         
 def runWorkflow_multipleExamples(inputGenFunction,
